@@ -111,6 +111,21 @@ async function loadMethodDocs() {
   }
 }
 
+async function loadMethodDocRunStatus() {
+  try {
+    const data = await request("/api/method-docs/runs?limit=1");
+    const run = data.runs?.[0];
+    if (!run) return;
+    const source = methodDocsSources.find((item) => item.key === run.source);
+    methodDocsMessage.textContent =
+      `上次采集：${source?.label || run.source} / ${run.case_code}`
+      + ` · 新增 ${run.created}，更新 ${run.updated}`
+      + (run.errors?.length ? `，${run.errors.length} 个页面失败` : "");
+  } catch {
+    // The list still works when run history is unavailable.
+  }
+}
+
 function renderMethodDoc(document) {
   methodDocCurrent = document;
   methodDocsDetail.replaceChildren();
@@ -189,6 +204,7 @@ async function openMethodDocs() {
   methodDocsMessage.textContent = "仅采集配置中的白名单站点，并遵守 robots.txt";
   await loadMethodDocSources();
   await loadMethodDocs();
+  await loadMethodDocRunStatus();
   if (!methodDocCurrent) {
     methodDocPlaceholder("选择一份方法文档查看正文");
   }
@@ -218,7 +234,7 @@ methodDocsCollect.addEventListener("click", async () => {
     const suffix = result.errors?.length
       ? `，${result.errors.length} 个页面未采集：${result.errors[0]}` : "";
     methodDocsMessage.textContent =
-      `采集完成：找到 ${result.found} 页，入库 ${result.added} 页${suffix}`;
+      `采集完成：找到 ${result.found} 页，新增 ${result.added}，更新 ${result.updated}${suffix}`;
     await loadMethodDocs();
     setMethodDocsBusy(false);
     if (result.documents?.length) {

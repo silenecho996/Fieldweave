@@ -102,12 +102,29 @@ class MethodDocWorkspaceTests(unittest.TestCase):
                 "case_code": "MED",
             })
             self.assertEqual(document["case_code"], "MED")
+            self.assertTrue(document["created"])
             listed = store.method_documents("MED")
             self.assertEqual(len(listed), 1)
             self.assertIn("excerpt", listed[0])
             self.assertNotIn("text", listed[0])
             detail = store.method_document("a" * 32)
             self.assertEqual(detail["text"], "Long method documentation")
+            repeated = store.save_method_document({
+                "id": "a" * 32, "source": "sklearn",
+                "source_label": "scikit-learn 用户指南",
+                "url": "https://scikit-learn.org/stable/page.html",
+                "title": "Updated Guide", "text": "Updated text",
+                "case_code": "MED",
+            })
+            self.assertFalse(repeated["created"])
+            self.assertEqual(store.method_document("a" * 32)["title"], "Updated Guide")
+            run = store.record_method_doc_run({
+                "source": "sklearn", "case_code": "MED",
+                "started_at": 1, "finished_at": 2,
+                "found": 1, "created": 1, "updated": 0, "errors": ["one error"],
+            })
+            self.assertEqual(run["errors"], ["one error"])
+            self.assertEqual(len(store.method_doc_runs()), 1)
             store.remove_method_document("a" * 32)
             self.assertEqual(store.method_documents("MED"), [])
 

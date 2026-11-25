@@ -31,8 +31,10 @@ Fieldweave 是一个可以在本机运行的跨学科科研协作 Web 原型，�
 - **AI 与人工结果分离**：保存模型原始结果和人工修订结果，发生修改后可查看差异
 - **知识库覆盖图**：按案例统计研究任务覆盖数、目标数和缺口
 - **文献采集**：支持 Europe PMC、Crossref、OpenAlex、arXiv 和 Zenodo
-- **方法文档采集**：仅从白名单站点抓取公开文档，遵守 robots.txt、同域限制和访问间隔
+- **方法文档采集**：从 10 个白名单技术文档站点抓取公开文档，遵守 robots.txt、同域限制和访问间隔
 - **候选条目生成**：可用模型从论文、方法文档的标题、摘要和全文分节生成待核对条目，审核后合并进工作台覆盖层
+- **批量入库**：选择原始文献或方法文档，批量生成候选，再进入人工审核和知识库合并
+- **定时采集**：可通过 `--docs-interval-hours` 在后台定时采集方法文档，并记录新增、更新和去重统计
 - **项目与对话**：项目、聊天、附件、搜索、导出、回收站和自动备份
 - **多模型接入**：DeepSeek、OpenAI、Claude、Gemini 和 OpenAI 兼容接口
 - **本地运行**：无第三方 Python 运行时依赖，支持 Windows 和 macOS
@@ -130,8 +132,8 @@ Windows 下把 `./Start.command` 换成 `.\Start.cmd`
 5. 在结果中查看概念对应、差异、共识、冲突、互补和建议，并完成人工确认
 6. 点击左侧「文献与数据」采集论文或数据集，可使用「批量扩展」补充文献量
 7. 点击左侧「方法文档」从白名单站点采集公开方法文档，可查看正文或生成候选条目
-8. 在文献详情生成候选条目，在「待核对条目」中审核、合并或回滚
-9. 在项目概览查看聊天、资料、候选条目和知识覆盖情况
+8. 点击左侧「批量入库」勾选原始文献或方法文档，批量生成候选条目
+9. 在「待核对条目」中审核、合并或回滚，在项目概览查看知识覆盖情况
 
 ### 引用格式
 
@@ -214,6 +216,7 @@ Windows 下把 `./Start.command` 换成 `.\Start.cmd`
 |---|---|
 | `GET /api/method-docs/sources` | 返回配置中的白名单文档来源 |
 | `GET /api/method-docs?case=MED` | 列出已采集的方法文档摘要 |
+| `GET /api/method-docs/runs` | 查看定时或手动采集记录、新增数和更新数 |
 | `POST /api/method-docs/collect` | 按来源和案例采集白名单方法文档，遵守 robots.txt 和访问间隔 |
 | `GET /api/method-docs/{id}` | 查看方法文档正文 |
 | `POST /api/method-docs/{id}/candidates` | 用模型从方法文档生成候选条目 |
@@ -258,6 +261,19 @@ Windows 下把 `./Start.command` 换成 `.\Start.cmd`
 
 侧栏工具区的「方法文档」用于从公开技术文档中采集跨学科方法说明
 
+当前配置了 10 个来源：
+
+- scikit-learn
+- PyTorch
+- statsmodels
+- pandas
+- SciPy
+- scikit-image
+- NetworkX
+- Matplotlib
+- seaborn
+- SymPy
+
 采集限制：
 
 - 只允许 `src/method_docs_config.json` 中配置的域名和路径前缀
@@ -267,10 +283,46 @@ Windows 下把 `./Start.command` 换成 `.\Start.cmd`
 - 页面之间有访问间隔
 - 只处理 HTTPS HTML，不处理登录页、付费墙或 PDF
 - 单页有大小上限，正文有长度上限
+- 默认每个来源最多采集 8—10 页
 
 采集结果保存到 `data/workspace.sqlite3`，不会写入 Git 仓库
 
+同一 URL 再次采集时会更新已有文档，并分别统计新增数和更新数
+
 在文档详情中可以用模型生成候选条目，审核通过后再合并进工作台知识库
+
+### 定时采集
+
+启动服务时传入间隔小时数即可启用后台采集：
+
+```bash
+python3 -B src/app.py --open --docs-interval-hours 24
+```
+
+Windows：
+
+```powershell
+py -3 -B src/app.py --open --docs-interval-hours 24
+```
+
+定时任务会按每个来源的 `default_case` 保存文档，并把新增、更新和错误写入 `method_doc_runs` 表
+
+侧栏「方法文档」会显示最近一次采集统计
+
+## 批量入库
+
+侧栏工具区的「批量入库」用于把原始数据串成完整流程：
+
+1. 选择研究案例
+2. 选择「方法文档」或「文献」
+3. 勾选需要处理的原始记录
+4. 批量生成候选条目
+5. 在「待核对条目」中人工审核
+6. 审核通过后合并进工作台知识库
+
+单次最多处理 10 条，避免一次调用过多模型请求
+
+生成过程中会分别统计新增候选、重复跳过和失败数量
 
 站点正文版权归原站点和作者所有，采集内容仅用于本地研究和原型演示
 
@@ -289,7 +341,7 @@ Windows 下把 `./Start.command` 换成 `.\Start.cmd`
 
 新增案例时需要同步补充对应的 `coverage` 任务，服务启动时会校验配置
 
-方法文档白名单保存在 `src/method_docs_config.json`，新增来源时需要填写 `domain`、`seed`、`path_prefix` 和 `max_pages`
+方法文档白名单保存在 `src/method_docs_config.json`，新增来源时需要填写 `domain`、`seed`、`path_prefix`、`max_pages` 和 `default_case`
 
 ## 测试
 
@@ -307,9 +359,9 @@ python3 -B -m unittest discover -s tests -v
 
 也可以双击 `Test.cmd` 或 `Test.command`
 
-当前测试数量为 105，全部测试不访问网络
+当前测试数量为 106，全部测试不访问网络
 
-测试覆盖检索排序、同义词、方法去重、覆盖任务、引用核对、工作台增删改查、聊天重命名、附件词表、会话搜索、候选审核、跨学科对齐、证据过滤、人工修订、知识版本、方法文档解析与白名单抓取、回收站、项目报告、自动备份、PDF 文本提取、图片原文、侧栏排序、文献解析和数据库迁移
+测试覆盖检索排序、同义词、方法去重、覆盖任务、引用核对、工作台增删改查、聊天重命名、附件词表、会话搜索、候选审核、跨学科对齐、证据过滤、人工修订、知识版本、方法文档解析与白名单抓取、新增/更新去重统计、回收站、项目报告、自动备份、PDF 文本提取、图片原文、侧栏排序、文献解析和数据库迁移
 
 GitHub Actions 配置在 `.github/workflows/tests.yml`，会在 Windows 和 macOS 上运行测试
 

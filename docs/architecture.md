@@ -36,6 +36,7 @@ src/app.py
 | `src/method_docs_config.json` | 方法文档白名单、种子页面和抓取限制 |
 | `src/workspace_store.py` | 项目、聊天、附件、候选条目、对齐记录、方法文档和版本 |
 | `src/client/app*.js` | 浏览器交互脚本，由 Python 服务直接提供 |
+| `src/client/app-bulk-import.js` | 原始数据批量生成候选条目的前端流程 |
 | `frontend/` | React 模板、Tailwind 主题和 shadcn/ui 组件 |
 | `dist/` | 构建后的 `index.html` 和 `styles.css` |
 
@@ -73,15 +74,15 @@ src/app.py
 2. `method_docs.py` 读取配置中的种子页面
 3. 检查 robots.txt、域名、路径前缀和访问间隔
 4. 抓取 HTML，提取标题、正文和允许范围内的链接
-5. 保存到 `method_documents` 表
-6. 可从文档生成候选条目，审核后合并进知识库覆盖层
+5. 保存到 `method_documents` 表，并把新增、更新和错误写入 `method_doc_runs`
+6. 可从文档或批量入库页面生成候选条目，审核后合并进知识库覆盖层
 
 ## 数据库
 
 | 文件 | 用途 |
 |---|---|
 | `data/knowledge-base.sqlite3` | 只读示例知识库，包含案例、条目和覆盖配置所需数据 |
-| `data/workspace.sqlite3` | 可写工作台，包含项目、聊天、文件、候选、对齐、方法文档和版本 |
+| `data/workspace.sqlite3` | 可写工作台，包含项目、聊天、文件、候选、对齐、方法文档、采集记录和版本 |
 
 `data/workspace.sqlite3` 首次启动时自动创建，已被 Git 忽略
 

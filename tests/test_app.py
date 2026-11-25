@@ -13,8 +13,9 @@ from context import KNOWLEDGE_DB
 import app
 from app import (
     RequestError, analyze_alignment, answer_question, checked_citations, citation_ids,
-    conversation_context, generate_literature_candidates, merge_alignment_edit,
-    parse_alignment_result, parse_candidate_entries, validate_question,
+    collect_method_docs, conversation_context, generate_literature_candidates,
+    merge_alignment_edit, parse_alignment_result, parse_candidate_entries,
+    validate_question,
 )
 from search import load_entries
 from unittest.mock import patch
@@ -372,6 +373,31 @@ class AlignmentTests(unittest.TestCase):
         self.assertEqual(merged["target_concept"], "可疑交易识别")
         self.assertEqual(merged["relation"], "新关系")
         self.assertEqual(merged["evidence_ids"], ["MED-04"])
+
+
+class MethodDocCollectionTests(unittest.TestCase):
+    def test_collect_counts_created_and_updated_records(self):
+        with tempfile.TemporaryDirectory() as temp:
+            workspace = WorkspaceStore(Path(temp) / "workspace.sqlite3")
+            crawled = {
+                "source": "sklearn", "label": "scikit-learn 用户指南", "found": 1,
+                "documents": [{
+                    "id": "a" * 32, "source": "sklearn",
+                    "source_label": "scikit-learn 用户指南",
+                    "url": "https://scikit-learn.org/stable/page.html",
+                    "title": "Guide", "text": "Method documentation",
+                }],
+                "errors": [],
+            }
+            with patch("app.crawl_source", return_value=crawled):
+                first = collect_method_docs("sklearn", "MED", workspace)
+                second = collect_method_docs("sklearn", "MED", workspace)
+            self.assertEqual(first["added"], 1)
+            self.assertEqual(first["updated"], 0)
+            self.assertEqual(second["added"], 0)
+            self.assertEqual(second["updated"], 1)
+            self.assertEqual(len(workspace.method_doc_runs()), 2)
+            self.assertEqual(len(workspace.method_documents("MED")), 1)
 
 
 class ContextTests(unittest.TestCase):

@@ -8,21 +8,80 @@
       "domain": "scikit-learn.org",
       "seed": "https://scikit-learn.org/stable/user_guide.html",
       "path_prefix": "/stable/",
-      "max_pages": 5
+      "max_pages": 10,
+      "default_case": "MED"
     },
     "pytorch": {
-      "label": "PyTorch 文档",
+      "label": "PyTorch 教程",
       "domain": "pytorch.org",
-      "seed": "https://pytorch.org/docs/stable/index.html",
-      "path_prefix": "/docs/stable/",
-      "max_pages": 4
+      "seed": "https://pytorch.org/tutorials/",
+      "path_prefix": "/tutorials/",
+      "max_pages": 8,
+      "default_case": "MED"
     },
     "statsmodels": {
       "label": "statsmodels 用户指南",
       "domain": "www.statsmodels.org",
       "seed": "https://www.statsmodels.org/stable/user-guide.html",
       "path_prefix": "/stable/",
-      "max_pages": 4
+      "max_pages": 8,
+      "default_case": "EPI"
+    },
+    "pandas": {
+      "label": "pandas 用户指南",
+      "domain": "pandas.pydata.org",
+      "seed": "https://pandas.pydata.org/docs/user_guide/index.html",
+      "path_prefix": "/docs/",
+      "max_pages": 8,
+      "default_case": "FIN"
+    },
+    "scipy": {
+      "label": "SciPy 教程",
+      "domain": "docs.scipy.org",
+      "seed": "https://docs.scipy.org/doc/scipy/tutorial/index.html",
+      "path_prefix": "/doc/scipy/",
+      "max_pages": 8,
+      "default_case": "EPI"
+    },
+    "scikit-image": {
+      "label": "scikit-image 用户指南",
+      "domain": "scikit-image.org",
+      "seed": "https://scikit-image.org/docs/stable/",
+      "path_prefix": "/docs/stable/",
+      "max_pages": 8,
+      "default_case": "MED"
+    },
+    "networkx": {
+      "label": "NetworkX 文档",
+      "domain": "networkx.org",
+      "seed": "https://networkx.org/documentation/stable/index.html",
+      "path_prefix": "/documentation/stable/",
+      "max_pages": 8,
+      "default_case": "FIN"
+    },
+    "matplotlib": {
+      "label": "Matplotlib 用户指南",
+      "domain": "matplotlib.org",
+      "seed": "https://matplotlib.org/stable/users/index.html",
+      "path_prefix": "/stable/",
+      "max_pages": 8,
+      "default_case": "MED"
+    },
+    "seaborn": {
+      "label": "seaborn 教程",
+      "domain": "seaborn.pydata.org",
+      "seed": "https://seaborn.pydata.org/tutorial.html",
+      "path_prefix": "/tutorial",
+      "max_pages": 8,
+      "default_case": "FIN"
+    },
+    "sympy": {
+      "label": "SymPy 文档",
+      "domain": "docs.sympy.org",
+      "seed": "https://docs.sympy.org/latest/index.html",
+      "path_prefix": "/latest/",
+      "max_pages": 8,
+      "default_case": "EPI"
     }
   }
 }

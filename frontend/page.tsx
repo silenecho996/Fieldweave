@@ -102,6 +102,10 @@ export function Workbench({ brandDefinitions }: { brandDefinitions: string }) {
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
                 方法文档
               </Button>
+              <Button variant="ghost" id="show-bulk-import" className="tool-row" type="button" aria-haspopup="dialog" disabled>
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><path d="m17 15 3 3-3 3"/></svg>
+                批量入库
+              </Button>
               <Button variant="ghost" id="export-chat" className="tool-row" type="button" disabled>
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M12 12v5"/><path d="m9.5 14.5 2.5 2.5 2.5-2.5"/></svg>
                 导出对话为 Markdown
@@ -507,6 +511,40 @@ export function Workbench({ brandDefinitions }: { brandDefinitions: string }) {
           <section id="method-docs-detail" className="method-docs-detail" aria-live="polite">
             <p className="file-empty">选择一份方法文档查看正文</p>
           </section>
+        </div>
+      </dialog>
+      <dialog id="bulk-import-dialog" className="workbench-dialog bulk-import-dialog" aria-labelledby="bulk-import-title">
+        <header className="dialog-header">
+          <div className="file-dialog-heading">
+            <h2 id="bulk-import-title">批量入库</h2>
+            <p className="file-list-hint">原始数据 → 生成候选 → 人工审核 → 合并知识库</p>
+          </div>
+          <Button variant="outline" id="bulk-import-close" className="utility-button icon-only" type="button" aria-label="关闭批量入库">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </Button>
+        </header>
+        <div className="bulk-import-tools">
+          <div><Label htmlFor="bulk-import-case">研究案例</Label><select id="bulk-import-case"></select></div>
+          <div><Label htmlFor="bulk-import-type">原始数据类型</Label><select id="bulk-import-type">
+            <option value="document">方法文档</option>
+            <option value="article">文献</option>
+          </select></div>
+          <Button variant="outline" id="bulk-import-select-all" className="secondary-button" type="button">全选</Button>
+          <Button variant="default" id="bulk-import-generate" className="primary-button" type="button" disabled>生成候选条目</Button>
+        </div>
+        <p id="bulk-import-message" className="bulk-import-message" role="status"></p>
+        <div className="bulk-import-grid">
+          <div id="bulk-import-list" className="bulk-import-list" aria-label="原始数据列表"></div>
+          <aside className="bulk-import-aside" aria-labelledby="bulk-import-flow-heading">
+            <h3 id="bulk-import-flow-heading">入库流程</h3>
+            <ol>
+              <li>选择案例和原始数据类型</li>
+              <li>勾选需要处理的记录</li>
+              <li>生成候选条目，等待人工审核</li>
+              <li>审核通过后合并进工作台知识库</li>
+            </ol>
+            <Button variant="outline" id="bulk-import-open-candidates" className="secondary-button" type="button">打开待核对条目</Button>
+          </aside>
         </div>
       </dialog>
       <dialog id="alignment-dialog" className="workbench-dialog alignment-dialog" aria-labelledby="alignment-title">

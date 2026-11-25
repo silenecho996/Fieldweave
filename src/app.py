@@ -9,7 +9,8 @@ import json
 from pathlib import Path
 import re
 import sqlite3
-from threading import Timer
+from threading import Thread, Timer
+import time
 from urllib.parse import parse_qs, quote, urlsplit
 import webbrowser
 
@@ -582,6 +583,55 @@ def analyze_alignment(payload, entries, profile):
     return result
 
 
+def method_doc_summary(record):
+    return {key: record[key] for key in
+            ("id", "source", "source_label", "url", "title", "case_code", "fetched_at")}
+
+
+def collect_method_docs(source_key, case_code, workspace):
+    if case_code not in CASE_PRESETS:
+        raise RequestError(400, "请选择有效的研究案例。")
+    started_at = time.time_ns()
+    result = crawl_source(source_key)
+    saved = []
+    created = 0
+    updated = 0
+    for document in result["documents"]:
+        document["case_code"] = case_code
+        record = workspace.save_method_document(document)
+        if record.get("created"):
+            created += 1
+        else:
+            updated += 1
+        saved.append(method_doc_summary(record))
+    run = workspace.record_method_doc_run({
+        "source": result["source"], "case_code": case_code,
+        "started_at": started_at, "finished_at": time.time_ns(),
+        "found": result["found"], "created": created, "updated": updated,
+        "errors": result["errors"],
+    })
+    return {
+        "source": result["source"], "label": result["label"],
+        "found": result["found"], "added": created, "updated": updated,
+        "documents": saved, "errors": result["errors"], "run": run,
+    }
+
+
+def schedule_method_docs(workspace, interval_hours):
+    interval = max(60.0, interval_hours * 3600)
+    while True:
+        for source in method_doc_sources():
+            case_code = source.get("default_case")
+            if case_code not in CASE_PRESETS:
+                continue
+            try:
+                collect_method_docs(source["key"], case_code, workspace)
+                print(f"定时采集完成：{source['label']} / {case_code}", flush=True)
+            except Exception as error:
+                print(f"定时采集失败：{source['label']}：{error}", flush=True)
+        time.sleep(interval)
+
+
 def merge_alignment_edit(current, changes):
     merged = dict(current) if isinstance(current, dict) else {}
     if isinstance(changes, dict):
@@ -765,6 +815,16 @@ class ResearchHandler(BaseHTTPRequestHandler):
         if path == "/api/method-docs/sources":
             self.send_json({"sources": method_doc_sources()})
             return
+        if path == "/api/method-docs/runs":
+            if self.command != "GET":
+                raise RequestError(404, "找不到这个文档接口。")
+            params = parse_qs(query)
+            try:
+                limit = int(params.get("limit", ["20"])[0])
+            except ValueError as error:
+                raise RequestError(400, "记录数量不正确。") from error
+            self.send_json({"runs": workspace.method_doc_runs(limit)})
+            return
         if path == "/api/method-docs":
             if self.command != "GET":
                 raise RequestError(404, "找不到这个文档接口。")
@@ -783,19 +843,8 @@ class ResearchHandler(BaseHTTPRequestHandler):
             case_code = payload.get("case")
             if case_code not in CASE_PRESETS:
                 raise RequestError(400, "请选择有效的研究案例。")
-            result = crawl_source(payload.get("source"))
-            saved = []
-            for document in result["documents"]:
-                document["case_code"] = case_code
-                record = workspace.save_method_document(document)
-                saved.append({key: record[key] for key in
-                              ("id", "source", "source_label", "url", "title",
-                               "case_code", "fetched_at")})
-            self.send_json({
-                "source": result["source"], "label": result["label"],
-                "found": result["found"], "added": len(saved),
-                "documents": saved, "errors": result["errors"],
-            })
+            self.send_json(collect_method_docs(
+                payload.get("source"), case_code, workspace))
             return
         match = METHOD_DOC_ITEM.fullmatch(path)
         if not match:
@@ -1240,13 +1289,23 @@ def main():
     parser.add_argument("--port", type=int, default=8765, help="本地端口")
     parser.add_argument("--open", action="store_true", help="启动后打开网页")
     parser.add_argument("--verbose", action="store_true", help="输出请求日志")
+    parser.add_argument("--docs-interval-hours", type=float, default=0,
+                        help="白名单方法文档定时采集间隔；0 表示关闭")
     args = parser.parse_args()
+    if args.docs_interval_hours < 0:
+        parser.error("--docs-interval-hours 不能小于 0")
     args.workspace.parent.mkdir(parents=True, exist_ok=True)
     backup = backup_workspace(args.workspace.resolve())
     if backup is not None:
         print(f"工作台已备份：{backup}", flush=True)
     try:
         workspace = WorkspaceStore(args.workspace.resolve())
+        if args.docs_interval_hours > 0:
+            scheduler = Thread(
+                target=schedule_method_docs,
+                args=(workspace, args.docs_interval_hours), daemon=True)
+            scheduler.start()
+            print("方法文档定时采集已启用，首次采集在后台进行", flush=True)
         handler = partial(
             ResearchHandler, db_path=args.db.resolve(), workspace=workspace, literature=LiteratureStore(workspace),
             settings=ModelSettings(), verbose=args.verbose,

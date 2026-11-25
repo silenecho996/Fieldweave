@@ -25,6 +25,7 @@ BLOCK_TAGS = {
     "h1", "h2", "h3", "h4", "h5", "h6", "pre", "blockquote", "tr", "br",
 }
 MAX_TEXT = 50_000
+CASE_CODES = {"MED", "EPI", "FIN"}
 
 
 def load_config(path=CONFIG_PATH):
@@ -54,20 +55,23 @@ def load_config(path=CONFIG_PATH):
         seed = item.get("seed")
         prefix = item.get("path_prefix")
         pages = item.get("max_pages", 4)
+        default_case = item.get("default_case")
         if not all(isinstance(value, str) and value.strip()
                    for value in (label, domain, seed, prefix)):
             raise RuntimeError(f"{path}：来源 {key} 的 label/domain/seed/path_prefix 不能为空")
+        if default_case not in CASE_CODES:
+            raise RuntimeError(f"{path}：来源 {key} 的 default_case 需要是 MED、EPI 或 FIN")
         seed_parts = urlsplit(seed)
         if seed_parts.scheme != "https" or seed_parts.hostname != domain:
             raise RuntimeError(f"{path}：来源 {key} 的 seed 必须使用对应 HTTPS 域名")
         if not prefix.startswith("/"):
             raise RuntimeError(f"{path}：来源 {key} 的 path_prefix 需要以 / 开头")
-        if type(pages) is not int or not 1 <= pages <= 20:
-            raise RuntimeError(f"{path}：来源 {key} 的 max_pages 需要 1 至 20")
+        if type(pages) is not int or not 1 <= pages <= 30:
+            raise RuntimeError(f"{path}：来源 {key} 的 max_pages 需要 1 至 30")
         sources[key] = {
             "label": label.strip(), "domain": domain.strip(),
             "seed": seed.strip(), "path_prefix": prefix,
-            "max_pages": pages,
+            "max_pages": pages, "default_case": default_case,
         }
     return {"user_agent": user_agent.strip(), "max_bytes": max_bytes,
             "delay_seconds": float(delay), "sources": sources}
@@ -201,6 +205,7 @@ def source_list():
     return [{
         "key": key, "label": source["label"], "domain": source["domain"],
         "seed": source["seed"], "max_pages": source["max_pages"],
+        "default_case": source["default_case"],
     } for key, source in SOURCES.items()]
 
 
@@ -245,7 +250,8 @@ def crawl_source(source_key, *, fetcher=None, robots=None, sleeper=None, max_pag
         except (ValueError, AssertionError):
             errors.append(f"{url}：HTML 无法解析")
             continue
-        text = clean_text(parser.main_parts) if parser.main_parts else clean_text(parser.parts)
+        main_text = clean_text(parser.main_parts)
+        text = main_text if len(main_text) >= 200 else clean_text(parser.parts)
         if len(text) < 200:
             errors.append(f"{url}：正文过短，已跳过")
             continue

@@ -46,6 +46,9 @@ ALIGNMENT_FIELDS = (
 )
 MAX_ALIGNMENT_RESULT = 256_000
 METHOD_DOC_FIELDS = "id, source, source_label, url, title, text, case_code, fetched_at"
+METHOD_DOC_RUN_FIELDS = (
+    "id, source, case_code, started_at, finished_at, found, created, updated, errors"
+)
 LOCAL_ENTRY_FIELDS = (
     "entry_id, case_code, scenario, concept, method, rationale, conditions, "
     "limitations, evidence, source_row, candidate_id, active"
@@ -167,6 +170,18 @@ CREATE TABLE IF NOT EXISTS method_documents (
     fetched_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS method_documents_case ON method_documents (case_code, fetched_at DESC);
+CREATE TABLE IF NOT EXISTS method_doc_runs (
+    id TEXT PRIMARY KEY,
+    source TEXT NOT NULL,
+    case_code TEXT NOT NULL,
+    started_at INTEGER NOT NULL,
+    finished_at INTEGER NOT NULL,
+    found INTEGER NOT NULL,
+    created INTEGER NOT NULL,
+    updated INTEGER NOT NULL,
+    errors TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS method_doc_runs_created ON method_doc_runs (started_at DESC);
 CREATE TABLE IF NOT EXISTS schema_meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -1436,7 +1451,9 @@ class WorkspaceStore:
                 f"SELECT {METHOD_DOC_FIELDS} FROM method_documents WHERE id=?",
                 (document_id,),
             ).fetchone()
-            return self.method_document_view(row)
+            record = self.method_document_view(row)
+            record["created"] = existing is None
+            return record
 
     def remove_method_document(self, document_id):
         with self.connect(write=True) as db:
@@ -1444,6 +1461,57 @@ class WorkspaceStore:
                 "DELETE FROM method_documents WHERE id=?", (document_id,))
             if not cursor.rowcount:
                 raise WorkspaceError(404, "找不到这个方法文档。")
+
+    @staticmethod
+    def method_doc_run_view(row):
+        item = dict(row)
+        try:
+            item["errors"] = json.loads(item["errors"]) if item["errors"] else []
+        except ValueError:
+            item["errors"] = []
+        for key in ("started_at", "finished_at"):
+            item[key] = datetime.fromtimestamp(
+                item[key] / 1e9, timezone.utc).isoformat(timespec="seconds")
+        return item
+
+    def record_method_doc_run(self, payload):
+        payload = ensure_object(payload)
+        source = field_text(payload.get("source"), "来源", 80, required=True)
+        case_code = field_text(payload.get("case_code"), "案例编号", 40, required=True)
+        values = []
+        for key in ("started_at", "finished_at", "found", "created", "updated"):
+            value = payload.get(key)
+            if type(value) is not int or value < 0:
+                raise WorkspaceError(400, "采集统计格式不正确。")
+            values.append(value)
+        errors = payload.get("errors", [])
+        if not isinstance(errors, list):
+            errors = []
+        errors = [str(item)[:1000] for item in errors[:8]]
+        run_id = uuid4().hex
+        with self.connect(write=True) as db:
+            db.execute(
+                "INSERT INTO method_doc_runs (id, source, case_code, started_at,"
+                " finished_at, found, created, updated, errors)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (run_id, source, case_code, *values,
+                 json.dumps(errors, ensure_ascii=False)),
+            )
+            row = db.execute(
+                f"SELECT {METHOD_DOC_RUN_FIELDS} FROM method_doc_runs WHERE id=?",
+                (run_id,),
+            ).fetchone()
+            return self.method_doc_run_view(row)
+
+    def method_doc_runs(self, limit=20):
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise WorkspaceError(400, "记录数量不正确。")
+        with self.connect() as db:
+            rows = db.execute(
+                f"SELECT {METHOD_DOC_RUN_FIELDS} FROM method_doc_runs"
+                " ORDER BY started_at DESC LIMIT ?", (limit,),
+            ).fetchall()
+        return [self.method_doc_run_view(row) for row in rows]
 
     def export_candidates(self):
         entries = []
