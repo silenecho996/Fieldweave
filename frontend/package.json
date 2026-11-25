@@ -1,0 +1,20 @@
+{
+  "name": "research-workbench-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsx render.tsx && tailwindcss -i theme.css -o ../dist/styles.css"
+  },
+  "dependencies": {
+    "@tailwindcss/cli": "4.3.5",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "lucide-react": "1.79.0",
+    "radix-ui": "1.8.1",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "tailwind-merge": "3.7.1",
+    "tailwindcss": "4.3.5",
+    "tsx": "4.23.15"
+  }
+}

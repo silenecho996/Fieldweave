@@ -1,0 +1,524 @@
+{
+  "version": 1,
+  "paper_links": {
+    "UNet++: A Nested U-Net Architecture for Medical Image Segmentation": "1807.10165",
+    "3D U-Net: Learning Dense Volumetric Segmentation from Sparse Annotation": "1606.06650",
+    "V-Net: Fully Convolutional Neural Networks for Volumetric Medical Image Segmentation": "1606.04797",
+    "Attention U-Net: Learning Where to Look for the Pancreas": "1804.03999",
+    "Automated Design of Deep Learning Methods for Biomedical Image Segmentation": "1904.08128v2",
+    "TransUNet: Transformers Make Strong Encoders for Medical Image Segmentation": "2102.04306",
+    "UNETR: Transformers for 3D Medical Image Segmentation": "2103.10504",
+    "DeepLesion: Automated Deep Mining, Categorization and Detection of Significant Radiology Image Findings using Large-Scale Clinical Lesion Annotations": "1710.01766"
+  },
+  "cases": {
+    "MED": {
+      "label": "医学影像",
+      "discipline": "计算机视觉",
+      "method": "我有腹部 CT 切片和人工标注，想自动勾出肝脏轮廓，可以参考哪些方法？",
+      "concept": "医学影像中的病灶区域识别，对应计算机视觉中的什么任务？"
+    },
+    "EPI": {
+      "label": "传染病传播",
+      "discipline": "统计学",
+      "method": "我有每天的新增病例数，想估计传播强度和时变再生数 Rt，可以参考什么方法？",
+      "concept": "预测未来病例数和估计近期传播强度，在统计学里是同一个问题吗？"
+    },
+    "FIN": {
+      "label": "金融风险",
+      "discipline": "数据科学",
+      "method": "有历史借款人的资料和违约标签。想估计新申请人的违约概率，可以参考什么方法？",
+      "concept": "筛查可疑交易，在数据科学里可以对应什么任务？"
+    }
+  },
+  "mappings": {
+    "MED": [
+      {
+        "keywords": [
+          "病灶",
+          "轮廓",
+          "分割",
+          "区域识别",
+          "掩膜",
+          "像素",
+          "勾画",
+          "勾出",
+          "标出"
+        ],
+        "source": "勾画病灶或器官区域",
+        "target": "图像分割",
+        "relation": "研究目标到计算任务",
+        "explanation": "需要得到区域轮廓或逐像素、逐体素的标签时，可以将问题表述为图像分割。医学侧还需定义目标组织及标注标准。",
+        "entry_ids": [
+          "MED-04",
+          "MED-06",
+          "MED-07"
+        ]
+      },
+      {
+        "keywords": [
+          "病灶",
+          "定位",
+          "边界框",
+          "检测",
+          "框出",
+          "区域识别",
+          "位置"
+        ],
+        "source": "定位影像中的病灶",
+        "target": "目标检测",
+        "relation": "研究目标到计算任务",
+        "explanation": "只需要标出所在位置时，可以用检测框表达位置和大致范围。需要精细轮廓时，应继续查看分割任务。",
+        "entry_ids": [
+          "MED-09"
+        ]
+      },
+      {
+        "keywords": [
+          "三维",
+          "3d",
+          "体素",
+          "体积",
+          "连续切片",
+          "体数据"
+        ],
+        "source": "在三维体数据上勾画结构",
+        "target": "三维图像分割",
+        "relation": "研究目标到计算任务",
+        "explanation": "当输入是连续切片或体数据、需要输出三维结构时，应选择支持三维卷积或体素预测的分割方法，并注意各向异性分辨率。",
+        "entry_ids": [
+          "MED-02",
+          "MED-03"
+        ]
+      }
+    ],
+    "EPI": [
+      {
+        "keywords": [
+          "传播强度",
+          "传播变强",
+          "传播有没有变强",
+          "传播是否增强",
+          "再生数",
+          "rt",
+          "传给"
+        ],
+        "source": "估计近期传播强度",
+        "target": "估计时变再生数 Rt",
+        "relation": "研究目标到统计量",
+        "explanation": "把传播强度随时间的变化表述为对 Rt 的估计。该估计依赖病例时间序列和间隔分布，报告延迟会影响近期结果。",
+        "entry_ids": [
+          "EPI-07",
+          "EPI-08"
+        ]
+      },
+      {
+        "keywords": [
+          "病例数",
+          "发病数",
+          "预测",
+          "发病趋势",
+          "时间序列",
+          "季节"
+        ],
+        "source": "预测未来报告病例数",
+        "target": "时间序列预测",
+        "relation": "研究目标到统计任务",
+        "explanation": "用历史病例序列预测未来计数。评估重点是对未来观测的预测表现，传播强度估计另有对应统计量。",
+        "entry_ids": [
+          "EPI-03",
+          "EPI-04"
+        ]
+      },
+      {
+        "keywords": [
+          "干预",
+          "政策",
+          "停课",
+          "口罩",
+          "措施效果",
+          "前后变化",
+          "防控"
+        ],
+        "source": "评估公共卫生干预前后的变化",
+        "target": "中断时间序列分析",
+        "relation": "研究目标到统计任务",
+        "explanation": "当干预在某一时点实施、需要区分水平变化和趋势变化时，可用分段回归的中断时间序列；同时要控制同期其他变化和自相关。",
+        "entry_ids": [
+          "EPI-09"
+        ]
+      },
+      {
+        "keywords": [
+          "时空聚集",
+          "聚集",
+          "热点",
+          "高风险区域",
+          "空间",
+          "时空扫描"
+        ],
+        "source": "识别高风险的时空聚集区域",
+        "target": "时空扫描统计",
+        "relation": "研究目标到统计方法",
+        "explanation": "在时间和空间窗口上检验病例计数相对预期的超额，可输出候选聚集区域及其显著性；结果对窗口设置和背景人口敏感。",
+        "entry_ids": [
+          "EPI-10"
+        ]
+      },
+      {
+        "keywords": [
+          "发病率",
+          "气温",
+          "湿度",
+          "协变量",
+          "影响因素",
+          "关联",
+          "暴露"
+        ],
+        "source": "估计发病率与环境和人口因素的关联",
+        "target": "计数回归",
+        "relation": "研究目标到统计模型",
+        "explanation": "事件计数可用泊松回归建模，并以 offset 表示人时或人口暴露；计数过度离散时应考虑负二项回归。",
+        "entry_ids": [
+          "EPI-05",
+          "EPI-06"
+        ]
+      }
+    ],
+    "FIN": [
+      {
+        "keywords": [
+          "可疑交易",
+          "异常",
+          "反洗钱",
+          "欺诈",
+          "筛查"
+        ],
+        "source": "筛查可疑客户或交易",
+        "target": "异常检测",
+        "relation": "研究目标到计算任务",
+        "explanation": "标签稀缺时，可把问题表述为根据行为特征给异常样本排序。输出用于筛查，仍需结合证据复核。",
+        "entry_ids": [
+          "FIN-04",
+          "FIN-05"
+        ]
+      },
+      {
+        "keywords": [
+          "违约",
+          "信用风险",
+          "信用评分",
+          "还款"
+        ],
+        "source": "估计借款人违约概率",
+        "target": "有监督的二分类概率估计",
+        "relation": "研究目标到计算任务",
+        "explanation": "用历史借款人特征和已知违约标签训练模型，输出研究对象的预测概率。知识库给出了可解释的逻辑回归基线及其假设。",
+        "entry_ids": [
+          "FIN-01"
+        ]
+      },
+      {
+        "keywords": [
+          "风险传染",
+          "关联网络",
+          "机构关系",
+          "交易网络",
+          "团伙"
+        ],
+        "source": "分析机构或交易之间的关系风险",
+        "target": "图上的风险建模",
+        "relation": "研究目标到数据表示",
+        "explanation": "把机构、账户或交易建成图，节点分类或边预测可以表达传染和团伙模式；需要先明确节点、边和时间的定义。",
+        "entry_ids": [
+          "FIN-07"
+        ]
+      },
+      {
+        "keywords": [
+          "市场风险",
+          "波动率",
+          "var",
+          "风险价值",
+          "尾部风险",
+          "极端损失"
+        ],
+        "source": "估计市场波动下的风险价值",
+        "target": "波动率与 VaR 建模",
+        "relation": "研究目标到统计模型",
+        "explanation": "时变波动率模型可支持 VaR 和尾部风险估计；需要在滚动窗口上做回测，并说明分布假设。",
+        "entry_ids": [
+          "FIN-09"
+        ]
+      },
+      {
+        "keywords": [
+          "压力测试",
+          "极端情景",
+          "资本",
+          "流动性",
+          "情景分析"
+        ],
+        "source": "评估极端情景下的损失与资本影响",
+        "target": "情景压力测试",
+        "relation": "研究目标到评估方法",
+        "explanation": "把严重但合理的情景转化为损失、资本和流动性影响；情景设定和传导假设需要单独记录和复核。",
+        "entry_ids": [
+          "FIN-10"
+        ]
+      },
+      {
+        "keywords": [
+          "金融文本",
+          "新闻",
+          "公告",
+          "舆情",
+          "情绪",
+          "文本分析",
+          "报告"
+        ],
+        "source": "从金融文本提取风险信号",
+        "target": "金融文本分析",
+        "relation": "研究目标到数据模态",
+        "explanation": "从新闻、公告和报告中抽取情绪与风险事件，形成辅助特征；需要处理领域词义、时间对齐和标注噪声。",
+        "entry_ids": [
+          "FIN-08"
+        ]
+      }
+    ]
+  },
+  "coverage": {
+    "MED": [
+      {
+        "key": "segmentation",
+        "label": "器官与病灶分割",
+        "keywords": [
+          "分割",
+          "勾画",
+          "轮廓",
+          "segmentation"
+        ],
+        "target": 4
+      },
+      {
+        "key": "volumetric",
+        "label": "三维体数据分割",
+        "keywords": [
+          "三维",
+          "3d",
+          "体素",
+          "体数据"
+        ],
+        "target": 2
+      },
+      {
+        "key": "detection",
+        "label": "病灶检测与定位",
+        "keywords": [
+          "检测",
+          "定位",
+          "faster r-cnn",
+          "边界框"
+        ],
+        "target": 2
+      },
+      {
+        "key": "classification",
+        "label": "分类与诊断辅助",
+        "keywords": [
+          "分类",
+          "诊断",
+          "resnet"
+        ],
+        "target": 1
+      },
+      {
+        "key": "multi-organ",
+        "label": "多器官与跨中心泛化",
+        "keywords": [
+          "前列腺",
+          "胰腺",
+          "脑",
+          "胶质瘤",
+          "多器官"
+        ],
+        "target": 2
+      },
+      {
+        "key": "ultrasound",
+        "label": "超声与床旁影像",
+        "keywords": [
+          "超声",
+          "ultrasound",
+          "床旁"
+        ],
+        "target": 1
+      }
+    ],
+    "EPI": [
+      {
+        "key": "reproduction-number",
+        "label": "时变再生数 Rt",
+        "keywords": [
+          "再生数",
+          "rt",
+          "传播强度"
+        ],
+        "target": 2
+      },
+      {
+        "key": "forecasting",
+        "label": "短期与季节性预测",
+        "keywords": [
+          "预测",
+          "arima",
+          "sarima",
+          "forecast"
+        ],
+        "target": 2
+      },
+      {
+        "key": "intervention",
+        "label": "干预效果评估",
+        "keywords": [
+          "干预",
+          "中断时间序列",
+          "its"
+        ],
+        "target": 2
+      },
+      {
+        "key": "spatiotemporal-cluster",
+        "label": "时空聚集识别",
+        "keywords": [
+          "时空聚集",
+          "扫描统计",
+          "cluster",
+          "聚集区域"
+        ],
+        "target": 1
+      },
+      {
+        "key": "count-regression",
+        "label": "发病率与计数回归",
+        "keywords": [
+          "泊松",
+          "负二项",
+          "发病率",
+          "回归"
+        ],
+        "target": 2
+      },
+      {
+        "key": "vaccination",
+        "label": "疫苗与年龄分层",
+        "keywords": [
+          "疫苗",
+          "接种",
+          "疫苗覆盖",
+          "vaccination"
+        ],
+        "target": 1
+      },
+      {
+        "key": "genomic-surveillance",
+        "label": "病原基因组与变异监测",
+        "keywords": [
+          "基因组",
+          "测序",
+          "genomic",
+          "sequencing",
+          "variant"
+        ],
+        "target": 1
+      }
+    ],
+    "FIN": [
+      {
+        "key": "default-risk",
+        "label": "违约概率与信用评分",
+        "keywords": [
+          "违约",
+          "信用评分",
+          "信用风险"
+        ],
+        "target": 2
+      },
+      {
+        "key": "anomaly-detection",
+        "label": "欺诈与异常交易检测",
+        "keywords": [
+          "欺诈",
+          "反洗钱",
+          "异常交易",
+          "异常检测",
+          "可疑交易"
+        ],
+        "target": 3
+      },
+      {
+        "key": "graph-risk",
+        "label": "关系网络与风险传染",
+        "keywords": [
+          "图神经网络",
+          "风险传染",
+          "关系网络"
+        ],
+        "target": 1
+      },
+      {
+        "key": "market-risk",
+        "label": "波动率与市场风险",
+        "keywords": [
+          "var",
+          "波动",
+          "garch",
+          "风险价值"
+        ],
+        "target": 1
+      },
+      {
+        "key": "stress-testing",
+        "label": "极端情景压力测试",
+        "keywords": [
+          "压力测试",
+          "情景"
+        ],
+        "target": 1
+      },
+      {
+        "key": "financial-text",
+        "label": "金融文本与舆情信号",
+        "keywords": [
+          "金融文本",
+          "finbert",
+          "新闻",
+          "公告"
+        ],
+        "target": 1
+      },
+      {
+        "key": "causal-policy",
+        "label": "因果推断与策略评估",
+        "keywords": [
+          "因果推断",
+          "反事实",
+          "uplift",
+          "策略评估",
+          "causal"
+        ],
+        "target": 1
+      },
+      {
+        "key": "fairness",
+        "label": "公平性与偏差审计",
+        "keywords": [
+          "公平",
+          "偏差审计",
+          "bias",
+          "fairness"
+        ],
+        "target": 1
+      }
+    ]
+  }
+}

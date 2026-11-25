@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+frontend/node_modules/
+.tmp-verify/
+.backup-*/
+*.log
+workspace.sqlite3
+workspace.sqlite3-wal
+workspace.sqlite3-shm
+.backups/
+data/.backups/
+.DS_Store
+._*
+.AppleDouble
+.LSOverride

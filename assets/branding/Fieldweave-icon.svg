@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-labelledby="title">
+  <title id="title">Fieldweave</title>
+  <defs>
+    <mask id="weave-over" maskUnits="userSpaceOnUse" x="6" y="6" width="116" height="116">
+      <rect x="6" y="6" width="116" height="116" fill="white"/>
+      <rect x="29" y="58" width="29" height="19" rx="9.5" fill="black"/>
+    </mask>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#FBFAF6"/>
+  <g transform="translate(6 6)" fill="none" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M36 100V43C36 30.7 45.7 21 58 21H104" stroke="#30312D" mask="url(#weave-over)"/>
+    <path d="M15 61H101" stroke="#8E8A7E"/>
+  </g>
+</svg>

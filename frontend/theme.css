@@ -1,0 +1,38 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@import "./workbench.css";
+@source "./page.tsx";
+@source "./src";
+
+:root {
+  --radius: 0.625rem;
+}
+
+@theme inline {
+  --color-background: var(--workspace);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--accent-ink);
+  --color-secondary: var(--selected);
+  --color-secondary-foreground: var(--ink);
+  --color-accent-foreground: var(--ink);
+  --color-accent: var(--accent-tint);
+  --color-muted: var(--surface-hover);
+  --color-muted-foreground: var(--muted);
+  --color-border: var(--line);
+  --color-input: var(--control-line);
+  --color-ring: var(--accent);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--ink);
+  --color-sidebar-accent: var(--selected);
+  --color-sidebar-accent-foreground: var(--ink);
+  --color-sidebar-border: var(--line-subtle);
+  --color-sidebar-ring: var(--accent);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
