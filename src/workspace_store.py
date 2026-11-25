@@ -45,6 +45,7 @@ ALIGNMENT_FIELDS = (
     "final_result, status, note, created_at, reviewed_at"
 )
 MAX_ALIGNMENT_RESULT = 256_000
+METHOD_DOC_FIELDS = "id, source, source_label, url, title, text, case_code, fetched_at"
 LOCAL_ENTRY_FIELDS = (
     "entry_id, case_code, scenario, concept, method, rationale, conditions, "
     "limitations, evidence, source_row, candidate_id, active"
@@ -155,6 +156,17 @@ CREATE TABLE IF NOT EXISTS alignments (
     reviewed_at INTEGER
 );
 CREATE INDEX IF NOT EXISTS alignments_created ON alignments (created_at DESC);
+CREATE TABLE IF NOT EXISTS method_documents (
+    id TEXT PRIMARY KEY,
+    source TEXT NOT NULL,
+    source_label TEXT NOT NULL,
+    url TEXT NOT NULL UNIQUE,
+    title TEXT NOT NULL,
+    text TEXT NOT NULL,
+    case_code TEXT NOT NULL,
+    fetched_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS method_documents_case ON method_documents (case_code, fetched_at DESC);
 CREATE TABLE IF NOT EXISTS schema_meta (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -1349,6 +1361,89 @@ class WorkspaceStore:
             )
             return self.alignment_view(
                 self._alignment_row(db, alignment_id), include_model=True)
+
+    @staticmethod
+    def method_document_view(row, include_text=True):
+        item = dict(row)
+        text = item.pop("text", "")
+        if include_text:
+            item["text"] = text
+        else:
+            item["excerpt"] = text[:280]
+        item["fetched_at"] = datetime.fromtimestamp(
+            item["fetched_at"] / 1e9, timezone.utc).isoformat(timespec="seconds")
+        return item
+
+    def method_document(self, document_id):
+        with self.connect() as db:
+            row = db.execute(
+                f"SELECT {METHOD_DOC_FIELDS} FROM method_documents WHERE id=?",
+                (document_id,),
+            ).fetchone()
+        if row is None:
+            raise WorkspaceError(404, "找不到这个方法文档。")
+        return self.method_document_view(row)
+
+    def method_documents(self, case_code=None, limit=100):
+        if type(limit) is not int or not 1 <= limit <= 200:
+            raise WorkspaceError(400, "记录数量不正确。")
+        with self.connect() as db:
+            if case_code:
+                rows = db.execute(
+                    f"SELECT {METHOD_DOC_FIELDS} FROM method_documents"
+                    " WHERE case_code=? ORDER BY fetched_at DESC LIMIT ?",
+                    (case_code, limit),
+                ).fetchall()
+            else:
+                rows = db.execute(
+                    f"SELECT {METHOD_DOC_FIELDS} FROM method_documents"
+                    " ORDER BY fetched_at DESC LIMIT ?", (limit,),
+                ).fetchall()
+        return [self.method_document_view(row, include_text=False) for row in rows]
+
+    def save_method_document(self, payload):
+        payload = ensure_object(payload)
+        document_id = normalize_optional_id(payload.get("id")) or uuid4().hex
+        source = field_text(payload.get("source"), "来源", 80, required=True)
+        source_label = field_text(
+            payload.get("source_label"), "来源名称", 200, required=True)
+        url = field_text(payload.get("url"), "来源地址", 1200, required=True)
+        if not url.startswith("https://"):
+            raise WorkspaceError(400, "方法文档地址必须使用 HTTPS。")
+        title = field_text(payload.get("title"), "标题", 500, required=True)
+        text = field_text(payload.get("text"), "正文", 100_000, required=True)
+        case_code = field_text(payload.get("case_code"), "案例编号", 40, required=True)
+        fetched_at = time_ns()
+        with self.connect(write=True) as db:
+            existing = db.execute(
+                "SELECT id FROM method_documents WHERE url=?", (url,),
+            ).fetchone()
+            if existing:
+                document_id = existing["id"]
+                db.execute(
+                    "UPDATE method_documents SET source=?, source_label=?, title=?,"
+                    " text=?, case_code=?, fetched_at=? WHERE id=?",
+                    (source, source_label, title, text, case_code, fetched_at, document_id),
+                )
+            else:
+                db.execute(
+                    "INSERT INTO method_documents (id, source, source_label, url, title,"
+                    " text, case_code, fetched_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (document_id, source, source_label, url, title, text, case_code,
+                     fetched_at),
+                )
+            row = db.execute(
+                f"SELECT {METHOD_DOC_FIELDS} FROM method_documents WHERE id=?",
+                (document_id,),
+            ).fetchone()
+            return self.method_document_view(row)
+
+    def remove_method_document(self, document_id):
+        with self.connect(write=True) as db:
+            cursor = db.execute(
+                "DELETE FROM method_documents WHERE id=?", (document_id,))
+            if not cursor.rowcount:
+                raise WorkspaceError(404, "找不到这个方法文档。")
 
     def export_candidates(self):
         entries = []

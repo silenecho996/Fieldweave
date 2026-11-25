@@ -172,7 +172,8 @@ function updateInput() {
 function updateControls() {
   for (const id of ["go-home", "new-chat", "new-project", "show-files", "show-literature",
     "attach-file", "file-manager-upload", "chat-search", "open-search", "export-chat",
-    "show-candidates", "show-compare", "show-alignment", "show-knowledge", "show-trash"]) {
+    "show-candidates", "show-compare", "show-alignment", "show-method-docs",
+    "show-knowledge", "show-trash"]) {
     byId(id).disabled = !ready || busy;
   }
   byId("export-chat").disabled = !ready || busy || !active.id;
@@ -209,7 +210,7 @@ function setBusy(value) {
 // failure visible instead of leaving every button silently dead.
 window.addEventListener("load", () => {
   const missing = ["initialize", "askQuestion", "renderFileSurfaces", "openLiterature",
-    "openAlignment", "showModelSettings"]
+    "openAlignment", "openMethodDocs", "showModelSettings"]
     .filter((name) => typeof window[name] !== "function");
   if (!missing.length) return;
   showConnectionError("网页脚本未完整加载，通常是本地服务仍在运行旧版本。请关闭启动窗口，重新双击启动脚本（Windows：Start.cmd；macOS：Start.command），然后按 Ctrl+F5 刷新。");

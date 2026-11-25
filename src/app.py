@@ -19,6 +19,7 @@ from knowledge import (
     coverage_report, recommend, reference,
 )
 from literature import CASES, LiteratureStore
+from method_docs import crawl_source, source_list as method_doc_sources
 from model_providers import PROVIDERS, ModelError, ModelSettings, generate
 from search import DEFAULT_DB, load_entries
 from workspace_store import MAX_CHAT_BODY, MAX_UPLOAD_BODY, WorkspaceError, WorkspaceStore, normalize_optional_id
@@ -80,6 +81,9 @@ KNOWLEDGE_ENTRY = re.compile(
 LITERATURE_ITEM = re.compile(r"/api/literature/([0-9a-f]{32})(?:/(fulltext|candidates))?")
 LITERATURE_FILE = re.compile(r"/api/literature/([0-9a-f]{32})/files/([0-9a-f]{24})")
 ALIGNMENT_ITEM = re.compile(r"/api/alignment/([0-9a-f-]{32,36})(?:/(review))?")
+METHOD_DOC_ITEM = re.compile(
+    r"/api/method-docs/([0-9a-f-]{32,36})(?:/(remove|candidates))?"
+)
 MAX_BODY = 8192
 MAX_ALIGNMENT_BODY = 512 * 1024
 MAX_QUESTION = 600
@@ -754,6 +758,78 @@ class ResearchHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         self.serve_request()
 
+    def serve_method_docs(self, path, query):
+        workspace = self.workspace
+        if workspace is None:
+            raise RequestError(503, "本地工作台尚未启用。")
+        if path == "/api/method-docs/sources":
+            self.send_json({"sources": method_doc_sources()})
+            return
+        if path == "/api/method-docs":
+            if self.command != "GET":
+                raise RequestError(404, "找不到这个文档接口。")
+            params = parse_qs(query)
+            case_code = params.get("case", [""])[0].strip()
+            if case_code and case_code not in CASE_PRESETS:
+                raise RequestError(400, "请选择有效的研究案例。")
+            self.send_json({"documents": workspace.method_documents(case_code or None)})
+            return
+        if path == "/api/method-docs/collect":
+            if self.command != "POST":
+                raise RequestError(404, "找不到这个文档接口。")
+            payload = self.read_json()
+            if not isinstance(payload, dict):
+                raise RequestError(400, "请选择方法文档来源和案例。")
+            case_code = payload.get("case")
+            if case_code not in CASE_PRESETS:
+                raise RequestError(400, "请选择有效的研究案例。")
+            result = crawl_source(payload.get("source"))
+            saved = []
+            for document in result["documents"]:
+                document["case_code"] = case_code
+                record = workspace.save_method_document(document)
+                saved.append({key: record[key] for key in
+                              ("id", "source", "source_label", "url", "title",
+                               "case_code", "fetched_at")})
+            self.send_json({
+                "source": result["source"], "label": result["label"],
+                "found": result["found"], "added": len(saved),
+                "documents": saved, "errors": result["errors"],
+            })
+            return
+        match = METHOD_DOC_ITEM.fullmatch(path)
+        if not match:
+            raise RequestError(404, "找不到这个文档接口。")
+        document_id, action = match.groups()
+        if self.command == "GET" and action is None:
+            self.send_json({"document": workspace.method_document(document_id)})
+            return
+        if self.command == "POST" and action == "remove":
+            workspace.remove_method_document(document_id)
+            self.send_json({"removed": True})
+            return
+        if self.command == "POST" and action == "candidates":
+            payload = self.read_json()
+            document = workspace.method_document(document_id)
+            case_code = payload.get("case") if isinstance(payload, dict) else None
+            case_code = case_code or document["case_code"]
+            if case_code not in CASE_PRESETS:
+                raise RequestError(400, "请选择有效的研究案例。")
+            profile = self.settings.snapshot()
+            if profile is None:
+                raise RequestError(400, "请先在 API 设置中配置模型。")
+            article = {
+                "id": document["id"], "title": document["title"],
+                "authors": "", "year": "", "venue": document["source_label"],
+                "doi": "", "url": document["url"],
+                "abstract": document["text"], "fulltext": {"sections": []},
+            }
+            self.send_json(generate_literature_candidates(
+                article, case_code, profile, workspace,
+                cached_entries(self.db_path, workspace)))
+            return
+        raise RequestError(404, "找不到这个文档接口。")
+
     def serve_alignment(self, path, query):
         workspace = self.workspace
         if workspace is None:
@@ -1133,6 +1209,9 @@ class ResearchHandler(BaseHTTPRequestHandler):
                 return
             if path == "/api/alignment" or ALIGNMENT_ITEM.fullmatch(path):
                 self.serve_alignment(path, url.query)
+                return
+            if path == "/api/method-docs" or path.startswith("/api/method-docs/"):
+                self.serve_method_docs(path, url.query)
                 return
             if path == "/api/workspace" or path.startswith("/api/workspace/"):
                 self.serve_workspace(path, url.query)

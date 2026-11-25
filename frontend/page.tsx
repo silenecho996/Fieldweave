@@ -98,6 +98,10 @@ export function Workbench({ brandDefinitions }: { brandDefinitions: string }) {
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h10a3 3 0 0 1 0 6H9"/><path d="M20 17H10a3 3 0 0 1 0-6h5"/><path d="m11 4 3 3-3 3M13 14l-3 3 3 3"/></svg>
                 跨学科对齐
               </Button>
+              <Button variant="ghost" id="show-method-docs" className="tool-row" type="button" aria-haspopup="dialog" disabled>
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+                方法文档
+              </Button>
               <Button variant="ghost" id="export-chat" className="tool-row" type="button" disabled>
                 <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M12 12v5"/><path d="m9.5 14.5 2.5 2.5 2.5-2.5"/></svg>
                 导出对话为 Markdown
@@ -480,6 +484,29 @@ export function Workbench({ brandDefinitions }: { brandDefinitions: string }) {
             <div id="compare-table" className="compare-table-wrap"></div>
             <div id="compare-outline" className="compare-outline" aria-live="polite"></div>
           </div>
+        </div>
+      </dialog>
+      <dialog id="method-docs-dialog" className="workbench-dialog method-docs-dialog" aria-labelledby="method-docs-title">
+        <header className="dialog-header">
+          <div className="file-dialog-heading">
+            <h2 id="method-docs-title">方法文档</h2>
+            <p className="file-list-hint">仅采集白名单站点，遵守 robots.txt 和访问间隔</p>
+          </div>
+          <Button variant="outline" id="method-docs-close" className="utility-button icon-only" type="button" aria-label="关闭方法文档">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+          </Button>
+        </header>
+        <div className="method-docs-tools">
+          <div><Label htmlFor="method-docs-source">文档来源</Label><select id="method-docs-source"></select></div>
+          <div><Label htmlFor="method-docs-case">研究案例</Label><select id="method-docs-case"></select></div>
+          <Button variant="default" id="collect-method-docs" className="primary-button" type="button">采集方法文档</Button>
+        </div>
+        <p id="method-docs-message" className="method-docs-message" role="status"></p>
+        <div className="method-docs-grid">
+          <div id="method-docs-list" className="method-docs-list" aria-label="已采集方法文档"></div>
+          <section id="method-docs-detail" className="method-docs-detail" aria-live="polite">
+            <p className="file-empty">选择一份方法文档查看正文</p>
+          </section>
         </div>
       </dialog>
       <dialog id="alignment-dialog" className="workbench-dialog alignment-dialog" aria-labelledby="alignment-title">

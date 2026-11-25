@@ -1,0 +1,28 @@
+{
+  "user_agent": "Fieldweave/0.1 (+https://github.com/silenecho996/Fieldweave)",
+  "max_bytes": 2000000,
+  "delay_seconds": 0.6,
+  "sources": {
+    "sklearn": {
+      "label": "scikit-learn 用户指南",
+      "domain": "scikit-learn.org",
+      "seed": "https://scikit-learn.org/stable/user_guide.html",
+      "path_prefix": "/stable/",
+      "max_pages": 5
+    },
+    "pytorch": {
+      "label": "PyTorch 文档",
+      "domain": "pytorch.org",
+      "seed": "https://pytorch.org/docs/stable/index.html",
+      "path_prefix": "/docs/stable/",
+      "max_pages": 4
+    },
+    "statsmodels": {
+      "label": "statsmodels 用户指南",
+      "domain": "www.statsmodels.org",
+      "seed": "https://www.statsmodels.org/stable/user-guide.html",
+      "path_prefix": "/stable/",
+      "max_pages": 4
+    }
+  }
+}
