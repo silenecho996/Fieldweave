@@ -430,31 +430,35 @@ macOS 启动脚本会查找 Homebrew、`/usr/local/bin` 和系统 `python3`，�
 - 聊天归档和资料预览交互参考 [Open WebUI](https://github.com/open-webui/open-webui)
 - 文献来源包括 Europe PMC、Crossref、OpenAlex、arXiv 和 Zenodo
 
-## 仓库协作
+## 公开访问与参与
 
-本仓库用于课题组内部协作、课程展示和原型评审，默认不公开
+本仓库已公开，用于课题组研究、课程展示和原型评审
 
-课题组成员需要 GitHub 账号，并由负责人在仓库 `Settings → Collaborators` 中邀请
+任何人都可以浏览、克隆仓库，并按「快速开始」在本机运行
 
-建议权限：
+如需报告问题或提出建议，请使用 GitHub Issues
 
-- 开发成员：Write
-- 导师和评审：Read
-- 课题负责人：Admin
+如需修改代码，建议先提交 Issue 或 Pull Request；写权限仍需仓库负责人在 `Settings → Collaborators` 中授予
 
-协作者克隆仓库后按「快速开始」运行即可
+克隆仓库不会包含本机聊天、附件和 `workspace` 数据，首次启动会创建新的空工作台
 
-请勿提交 `data/workspace.sqlite3`、`data/.backups/`、API Key 或未公开研究数据
+请勿在 Issue、PR 或提交中上传 `data/workspace.sqlite3`、`data/.backups/`、API Key 或未公开研究数据
 
 ## 使用范围与许可
 
-本项目为课题组研究、课程展示和原型验证用途
+本项目公开用于课题组研究、课程展示和原型验证
 
 代码、文档、示例数据和品牌资源的版权归课题组及作者所有
 
+当前未指定 `LICENSE` 文件，默认保留所有权利
+
+仓库公开可见不等于开源授权
+
 未经课题组书面许可，不得复制、修改、分发、公开部署或用于商业用途
 
-仓库可见不等于开源授权
+如需将项目用于开源复用，请先由课题组和学校确认并补充 `LICENSE` 文件
+
+如需合作，请通过 GitHub Issues 联系课题负责人
 
 如需合作、评审或后续使用，请联系课题负责人
 
