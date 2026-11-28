@@ -95,6 +95,15 @@ def search(question, entries, limit=3):
         matched = terms & document.keys()
         if not matched:
             continue
+        # A single incidental bigram in the rationale (for example “计算”
+        # in a credit-risk description) is not enough to call a record relevant.
+        focus_terms = (
+            search_terms(entry["method"]) | search_terms(entry["concept"])
+            | search_terms(entry["scenario"]) | search_terms(entry["entry_id"])
+        )
+        strong = matched & focus_terms
+        if not strong and len(matched) < 2:
+            continue
         norm = 1 - BM25_B + BM25_B * length / average
         score = sum(
             relevance[term] * document[term] * (BM25_K1 + 1)

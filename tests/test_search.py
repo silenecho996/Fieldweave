@@ -68,6 +68,13 @@ class SearchRankingTests(unittest.TestCase):
         ]
         self.assertEqual(search("请比较 U-Net 的适用条件", entries)[0]["entry_id"], "MED-01")
 
+    def test_single_incidental_rationale_bigram_is_not_relevant(self):
+        entries = [
+            entry("FIN-14", "FIN", "XGBoost", "信用违约预测", "信用风险",
+                  "模型在计算效率上表现较好"),
+        ]
+        self.assertEqual(search("BFS对于计算机有什么用", entries), [])
+
 
 class RealKnowledgeBaseTests(unittest.TestCase):
     def test_database_contains_three_cases(self):
