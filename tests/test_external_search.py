@@ -101,6 +101,21 @@ class ExternalAnswerTests(unittest.TestCase):
         self.assertEqual(result["external_sources"][0]["id"], "EXT-1")
         self.assertIn("[EXT-1]", result["answer"])
 
+    def test_numeric_input_returns_a_research_clarification(self):
+        entries = load_entries(KNOWLEDGE_DB)
+        profile = SimpleNamespace(provider="deepseek")
+
+        def external(_question):
+            return {"research": False, "queries": [], "sources": [], "errors": []}
+
+        result = answer_question(
+            {"case": "MED", "mode": "auto", "question": "12346"},
+            entries, profile, external_fetcher=external)
+        self.assertEqual(result["kind"], "general")
+        self.assertEqual(result["source"], "local")
+        self.assertIn("不是一个研究问题", result["answer"])
+        self.assertEqual(result["external_sources"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

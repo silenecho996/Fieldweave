@@ -105,6 +105,10 @@ class RequestError(Exception):
         self.status = status
 
 
+def obvious_non_research(text):
+    return not re.search(r"[A-Za-z㐀-鿿]", text or "")
+
+
 def validate_question(payload):
     if not isinstance(payload, dict):
         raise RequestError(400, "请求需要包含案例、功能和问题。")
@@ -782,6 +786,13 @@ def answer_question(payload, entries, profile=None, recent=(), limit=6, external
             external = None
         if external and external.get("sources"):
             return external_answer(question, profile, recent, external)
+        if external and external.get("research") is False and obvious_non_research(question):
+            return {
+                "mode": "auto", "kind": "general", "source": "local",
+                "answer": "这看起来不是一个研究问题。请描述研究对象、数据类型或想解决的任务，我再帮你检索本地知识或公开文献。",
+                "thinking": "", "notice": "", "results": [], "references": [],
+                "external_sources": [],
+            }
     if automatic and not hits:
         return general_answer(question, profile, recent)
     source, answer, notice, thinking = (
