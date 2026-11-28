@@ -293,7 +293,7 @@ byId("literature-form").addEventListener("submit", async (event) => {
     literatureKinds.disabled = false;
     literatureCollect.disabled = false;
     literatureExpand.disabled = literatureKinds.querySelector(":checked").value === "dataset";
-    literatureGenerate.disabled = literatureKinds.querySelector(":checked").value === "dataset";
+    literatureGenerate.disabled = literatureKinds.querySelector(":checked").value === "dataset" || !literatureTotal;
   }
 });
 
@@ -329,7 +329,7 @@ literatureExpand.addEventListener("click", async () => {
     literatureKinds.disabled = false;
     literatureCollect.disabled = false;
     literatureExpand.disabled = literatureKinds.querySelector(":checked").value === "dataset";
-    literatureGenerate.disabled = literatureKinds.querySelector(":checked").value === "dataset";
+    literatureGenerate.disabled = literatureKinds.querySelector(":checked").value === "dataset" || !literatureTotal;
   }
 });
 
@@ -376,7 +376,7 @@ async function generateCandidates(articleIds) {
     literatureKinds.disabled = false;
     literatureCollect.disabled = false;
     literatureExpand.disabled = literatureKinds.querySelector(":checked").value === "dataset";
-    literatureGenerate.disabled = literatureKinds.querySelector(":checked").value === "dataset";
+    literatureGenerate.disabled = literatureKinds.querySelector(":checked").value === "dataset" || !literatureTotal;
   }
 }
 
