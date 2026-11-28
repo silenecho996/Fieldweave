@@ -2582,6 +2582,23 @@ textarea:focus {
   font-size: .8rem;
   line-height: 1.5;
 }
+.math-inline {
+  white-space: nowrap;
+  font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+  font-size: 1.04em;
+}
+.math-block {
+  display: block;
+  margin: .6rem 0;
+  overflow-x: auto;
+  text-align: center;
+  font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif;
+  font-size: 1.04rem;
+}
+.math-inline sup, .math-inline sub, .math-block sup, .math-block sub {
+  font-size: .72em;
+  line-height: 0;
+}
 .workbench-dialog {
   color: var(--ink);
   background: var(--surface);

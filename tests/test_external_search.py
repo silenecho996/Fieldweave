@@ -41,6 +41,16 @@ class ExternalQueryTests(unittest.TestCase):
         self.assertEqual(result["sources"], [])
         fetch.assert_not_called()
 
+    def test_technical_question_overrides_false_intent(self):
+        with patch("external_search.generate",
+                   return_value=('{"research":false,"queries":[]}', "")), \
+                patch("external_search.fetch_records", return_value=[]) as fetch:
+            result = search_external_literature(
+                "Prim 算法是什么", SimpleNamespace(provider="deepseek"))
+        self.assertTrue(result["research"])
+        self.assertEqual(result["queries"], ["Prim 算法是什么"])
+        self.assertEqual(fetch.call_count, 3)
+
 
 class ExternalSearchTests(unittest.TestCase):
     def test_search_returns_deduplicated_public_sources(self):

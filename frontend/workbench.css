@@ -384,6 +384,9 @@ textarea:focus { outline: none; }
 .local-source + .local-source { border-top: 1px solid var(--line-subtle); }
 .local-source :is(p, blockquote) { margin: .18rem 0 0; color: var(--muted); font-size: .875rem; }
 .local-source p.external-abstract { font-size: .8rem; line-height: 1.5; }
+.math-inline { white-space: nowrap; font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif; font-size: 1.04em; }
+.math-block { display: block; margin: .6rem 0; overflow-x: auto; text-align: center; font-family: "Cambria Math", "STIX Two Math", "Times New Roman", serif; font-size: 1.04rem; }
+.math-inline sup, .math-inline sub, .math-block sup, .math-block sub { font-size: .72em; line-height: 0; }
 
 .workbench-dialog { color: var(--ink); background: var(--surface); border: 1px solid var(--control-line); border-radius: .85rem; padding: 0; max-width: calc(100% - 1.4rem); max-height: calc(100% - 2rem); overflow: auto; }
 .workbench-dialog::backdrop { background: var(--overlay); }

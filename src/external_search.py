@@ -11,12 +11,20 @@ from search import search_terms
 
 
 QUERY_PROMPT = (
-    "你是科研文献检索助手。先判断用户输入是不是值得检索公开文献的科研、学术或技术问题。"
-    "闲聊、问候、感谢、纯数字、乱码、简单事实或没有明确研究意图的内容不要检索。"
+    "你是科研文献检索助手。先判断用户输入是不是值得检索公开文献的专业问题。"
+    "只排除问候、感谢、寒暄、纯数字、乱码、天气等日常闲聊。"
+    "询问计算机、算法、统计、医学、金融、工程等专业概念、术语或方法时，"
+    "即使只是“是什么”“有什么用”，也必须标记 research 为 true 并生成检索查询。"
     "只有当 research 为 true 时，才把问题转换成 1 至 3 个简洁的英文文献检索查询，"
     "保留研究对象、任务、方法和领域关键词。只输出 JSON："
     '{"research":true,"queries":["query one","query two"]}。'
     "如果不需要检索，输出 {\"research\":false,\"queries\":[]}。不要解释，不要输出代码块。"
+)
+TECHNICAL_HINT = re.compile(
+    r"算法|模型|方法|统计|医学|影像|分割|金融|风险|计算机|数据|网络|预测|分类|回归|"
+    r"优化|复杂度|编程|深度学习|机器学习|\b(?:bfs|dfs|prim|kruskal|dijkstra|"
+    r"transformer|python|sql)\b",
+    re.I,
 )
 PROVIDERS = ("OpenAlex", "Crossref", "arXiv")
 PER_PROVIDER = 4
@@ -85,7 +93,9 @@ def search_external_literature(question, profile):
     except ModelError:
         plan = {"research": True, "queries": [fallback]}
     if not plan["research"]:
-        return {"research": False, "queries": [], "sources": [], "errors": []}
+        if not TECHNICAL_HINT.search(question):
+            return {"research": False, "queries": [], "sources": [], "errors": []}
+        plan = {"research": True, "queries": [fallback]}
     queries = plan["queries"]
     terms = query_terms(question, queries)
     jobs = [(provider, query) for query in queries[:2] for provider in PROVIDERS]

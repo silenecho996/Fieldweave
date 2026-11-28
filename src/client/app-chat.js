@@ -134,9 +134,49 @@ function normalizeCitations(line) {
     .map((id) => "[" + id + "]").join(""));
 }
 
+const MATH_SYMBOLS = {
+  "\\times": " × ", "\\cdot": " · ", "\\leq": " ≤ ", "\\geq": " ≥ ",
+  "\\le": " ≤ ", "\\ge": " ≥ ", "\\neq": " ≠ ", "\\approx": " ≈ ",
+  "\\infty": " ∞ ", "\\pm": " ± ", "\\mp": " ∓ ", "\\int": " ∫ ",
+  "\\sum": " ∑ ", "\\prod": " ∏ ", "\\partial": " ∂ ", "\\nabla": " ∇ ",
+  "\\alpha": "α", "\\beta": "β", "\\gamma": "γ", "\\delta": "δ",
+  "\\theta": "θ", "\\lambda": "λ", "\\mu": "μ", "\\sigma": "σ",
+  "\\pi": "π", "\\Delta": "Δ", "\\Omega": "Ω", "\\rightarrow": " → ",
+  "\\to": " → ", "\\in": " ∈ ", "\\subset": " ⊂ ", "\\cup": " ∪ ",
+  "\\cap": " ∩ ", "\\log": " log ", "\\ln": " ln ", "\\exp": " exp ",
+  "\\max": " max ", "\\min": " min ", "\\arg": " arg ",
+};
+
+function mathNode(latex, display = false) {
+  let text = String(latex).trim();
+  text = text.replace(/\\frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}/g, "($1)/($2)");
+  text = text.replace(/\\sqrt\s*\{([^{}]*)\}/g, "√($1)");
+  text = text.replace(/\\(?:text|mathrm|mathbf|mathbb|operatorname)\s*\{([^{}]*)\}/g, "$1");
+  text = text.replace(/\\left|\\right/g, "");
+  text = text.replace(/\\[,;:!]/g, " ");
+  text = text.replace(/\\quad|\\qquad|\\\\/g, " ");
+  text = text.replace(/\\ /g, " ");
+  for (const [command, symbol] of Object.entries(MATH_SYMBOLS)) {
+    text = text.split(command).join(symbol);
+  }
+  text = text.replace(/\s+/g, " ").trim();
+  const node = element(display ? "div" : "span", display ? "math-block" : "math-inline");
+  const pattern = /([_^])(?:\{([^{}]*)\}|([A-Za-z0-9+\-−π∑√]))/g;
+  let offset = 0;
+  for (const token of text.matchAll(pattern)) {
+    node.append(text.slice(offset, token.index).replace(/[{}]/g, ""));
+    const part = element(token[1] === "^" ? "sup" : "sub");
+    part.textContent = token[2] ?? token[3] ?? "";
+    node.append(part);
+    offset = token.index + token[0].length;
+  }
+  node.append(text.slice(offset).replace(/[{}]/g, ""));
+  return node;
+}
+
 function appendInline(target, line, allowed, index) {
   line = normalizeCitations(line);
-  const markers = /\*\*([^*\n]+)\*\*|\x60([^\x60\n]+)\x60|\[([A-Z][A-Z0-9_-]{1,30}-\d+)\]/g;
+  const markers = /\*\*([^*\n]+)\*\*|\x60([^\x60\n]+)\x60|\\\((.+?)\\\)|\\\[(.+?)\\\]|\$([^$\n]+)\$|\[([A-Z][A-Z0-9_-]{1,30}-\d+)\]/g;
   let offset = 0;
   for (const token of line.matchAll(markers)) {
     target.append(line.slice(offset, token.index));
@@ -146,8 +186,10 @@ function appendInline(target, line, allowed, index) {
       target.append(strong);
     } else if (token[2]) {
       target.append(element("code", "", token[2]));
+    } else if (token[3] || token[4] || token[5]) {
+      target.append(mathNode(token[3] ?? token[4] ?? token[5], Boolean(token[4])));
     } else {
-      target.append(allowed.has(token[3]) ? citation(token[3], index, allowed) : token[0]);
+      target.append(allowed.has(token[6]) ? citation(token[6], index, allowed) : token[0]);
     }
     offset = token.index + token[0].length;
   }
@@ -163,6 +205,12 @@ function modelBlock(answer, allowed, index) {
     const trimmed = line.trim();
     if (!trimmed || trimmed === "---") {
       // A blank line between numbered items should not restart the list.
+      continue;
+    }
+    const displayMath = /^\\\[([\s\S]+)\\\]$/.exec(trimmed);
+    if (displayMath) {
+      list = null;
+      section.append(mathNode(displayMath[1], true));
       continue;
     }
     const heading = /^#{1,6}\s+(.+)$/.exec(trimmed);
