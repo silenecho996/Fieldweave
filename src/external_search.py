@@ -113,7 +113,11 @@ def search_external_literature(question, profile):
         if key and key not in deduped:
             deduped[key] = (provider, article)
     ranked = sorted(
-        deduped.values(),
+        (
+            (provider, article)
+            for provider, article in deduped.values()
+            if score_article(article, terms) > 0
+        ),
         key=lambda item: (
             -score_article(item[1], terms),
             item[1].get("citation_count", 0),

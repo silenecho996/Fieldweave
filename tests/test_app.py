@@ -100,6 +100,14 @@ class AnswerFlowTests(unittest.TestCase):
         self.assertTrue(response["notice"])
         self.assertEqual(response["results"], [])
 
+    def test_unrelated_question_does_not_fall_back_to_selected_case(self):
+        response = answer_question(
+            {"case": "FIN", "mode": "auto", "question": "BFS对于计算机有什么用"},
+            self.entries,
+        )
+        self.assertEqual(response["kind"], "general")
+        self.assertEqual(response["results"], [])
+
     def test_concept_question_returns_mappings(self):
         response = answer_question(
             {"case": "MED", "mode": "concept",
