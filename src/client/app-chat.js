@@ -162,7 +162,7 @@ function modelBlock(answer, allowed, index) {
   for (const line of answer.split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed === "---") {
-      list = null;
+      // A blank line between numbered items should not restart the list.
       continue;
     }
     const heading = /^#{1,6}\s+(.+)$/.exec(trimmed);
@@ -390,7 +390,7 @@ function renderReply(turn, index, view) {
   const refs = new Map(payload.references.map((item) => [item.entry_id, {
     urls: referenceUrls(item), text: item.text,
   }]));
-  if (payload.thinking) body.append(thinkingBlock(payload.thinking));
+  if (payload.thinking?.trim()) body.append(thinkingBlock(payload.thinking.trim()));
   if (payload.answer) {
     body.append(modelBlock(payload.answer, refs, index));
   }
