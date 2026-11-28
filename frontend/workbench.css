@@ -444,6 +444,7 @@ button.file-row-main { border: 0; padding: 0; background: transparent; color: va
 .literature-row:hover, .literature-row[aria-pressed="true"] { background: var(--selected); }
 .literature-row + .literature-row { margin-top: .25rem; }
 .literature-row strong { font-size: .86rem; font-weight: 650; line-height: 1.45; }
+.literature-more-button { width: 100%; min-height: 2.2rem; margin-top: .55rem; }
 .literature-detail { overflow-wrap: anywhere; }
 .literature-detail h3 { font-size: 1rem; letter-spacing: -.01em; }
 .literature-detail .file-meta { margin-top: .2rem; }

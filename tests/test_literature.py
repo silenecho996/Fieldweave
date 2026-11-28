@@ -219,6 +219,25 @@ class ExpandTests(unittest.TestCase):
         with self.assertRaises(WorkspaceError):
             self.library.expand({"case": "UNKNOWN", "limit_per_query": 2})
 
+    def test_list_supports_pagination(self):
+        arxiv_raw = arxiv_records(ARXIV_XML)[0]
+
+        def fake_fetch(provider, query, limit):
+            return [dict(EUROPE_PMC_RAW)] if provider == "Europe PMC" else [dict(arxiv_raw)]
+
+        with patch("literature.fetch_records", side_effect=fake_fetch):
+            self.library.expand({"case": "MED", "limit_per_query": 2})
+        first = self.library.list("MED", limit=1, offset=0)
+        second = self.library.list("MED", limit=1, offset=1)
+        self.assertEqual(first["total"], 2)
+        self.assertEqual(len(first["articles"]), 1)
+        self.assertTrue(first["has_more"])
+        self.assertEqual(second["total"], 2)
+        self.assertEqual(len(second["articles"]), 1)
+        self.assertFalse(second["has_more"])
+        with self.assertRaises(WorkspaceError):
+            self.library.list("MED", limit=0)
+
 
 class DatasetRecordTests(unittest.TestCase):
     def test_only_open_dataset_with_safe_files_is_accepted(self):

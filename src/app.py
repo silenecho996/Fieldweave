@@ -1119,7 +1119,13 @@ class ResearchHandler(BaseHTTPRequestHandler):
             case_code = params.get("case", [""])[0]
             kind = params.get("kind", ["article"])[0]
             if path == "/api/literature":
-                self.send_json(library.list(case_code, kind))
+                try:
+                    limit = int(params["limit"][0]) if params.get("limit") else None
+                    offset = int(params.get("offset", ["0"])[0])
+                except ValueError as error:
+                    raise RequestError(400, "文献分页参数不正确") from error
+                self.send_json(library.list(
+                    case_code, kind, offset=offset, limit=limit))
             else:
                 data = json.dumps(library.export(case_code, kind), ensure_ascii=False, indent=2).encode("utf-8")
                 self.send_payload(data, "application/json; charset=utf-8",

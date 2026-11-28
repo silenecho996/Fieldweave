@@ -23,7 +23,7 @@ class ConfigTests(unittest.TestCase):
 
     def test_catalog_counts_entries(self):
         catalog = {item["code"]: item for item in case_catalog(load_entries(KNOWLEDGE_DB))}
-        self.assertEqual(catalog["MED"]["count"], 10)
+        self.assertEqual(catalog["MED"]["count"], 16)
         self.assertEqual(catalog["MED"]["label"], "医学影像")
         self.assertIn("method", catalog["MED"]["examples"])
 
@@ -44,7 +44,7 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(len(report["cases"]), 1)
         case = report["cases"][0]
         self.assertEqual(case["code"], "MED")
-        self.assertEqual(case["entries"], 10)
+        self.assertEqual(case["entries"], 16)
         self.assertEqual(len(case["tasks"]), len(COVERAGE["MED"]))
         self.assertTrue(any(task["status"] == "gap" for task in case["tasks"]))
         for task in case["tasks"]:

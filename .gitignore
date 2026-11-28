@@ -9,6 +9,9 @@ workspace.sqlite3-wal
 workspace.sqlite3-shm
 .backups/
 data/.backups/
+data/.import-backups/
+crawler_data_submission.zip
+literature_crawler_submission_20261127.zip
 .DS_Store
 ._*
 .AppleDouble

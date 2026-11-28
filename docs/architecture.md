@@ -37,6 +37,7 @@ src/app.py
 | `src/workspace_store.py` | 项目、聊天、附件、候选条目、对齐记录、方法文档和版本 |
 | `src/client/app*.js` | 浏览器交互脚本，由 Python 服务直接提供 |
 | `src/client/app-bulk-import.js` | 原始数据批量生成候选条目的前端流程 |
+| `tools/import_archive_data.py` | 合并历史文献证据、知识点和 OpenAlex 原始论文 |
 | `frontend/` | React 模板、Tailwind 主题和 shadcn/ui 组件 |
 | `dist/` | 构建后的 `index.html` 和 `styles.css` |
 
@@ -67,6 +68,15 @@ src/app.py
 3. 统一转换为文章或数据集记录
 4. 去重后写入 `data/workspace.sqlite3`
 5. 可从论文生成候选条目，审核后合并进知识库覆盖层
+6. 文献列表通过 `limit` 和 `offset` 分页加载
+
+### 历史归档导入
+
+1. `tools/import_archive_data.py` 只读取归档中的 SQLite 数据，不执行归档中的脚本
+2. 通过 DOI、标题和条目编号去重
+3. 把审核后的证据和条目写进知识库
+4. 把 OpenAlex 论文写入本地文献库
+5. 归档压缩包和导入备份不进入 Git
 
 ### 方法文档采集
 
@@ -82,7 +92,7 @@ src/app.py
 | 文件 | 用途 |
 |---|---|
 | `data/knowledge-base.sqlite3` | 只读示例知识库，包含案例、条目和覆盖配置所需数据 |
-| `data/workspace.sqlite3` | 可写工作台，包含项目、聊天、文件、候选、对齐、方法文档、采集记录和版本 |
+| `data/workspace.sqlite3` | 可写工作台，包含项目、聊天、文件、候选、对齐、方法文档、OpenAlex 论文、采集记录和版本 |
 
 `data/workspace.sqlite3` 首次启动时自动创建，已被 Git 忽略
 

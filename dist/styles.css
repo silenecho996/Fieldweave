@@ -2918,6 +2918,11 @@ button.file-row-main {
   font-weight: 650;
   line-height: 1.45;
 }
+.literature-more-button {
+  width: 100%;
+  min-height: 2.2rem;
+  margin-top: .55rem;
+}
 .literature-detail {
   overflow-wrap: anywhere;
 }

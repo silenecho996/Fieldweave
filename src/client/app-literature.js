@@ -20,6 +20,9 @@ let literatureRevision = 0;
 let literatureSelection = "";
 let collectingLiterature = false;
 let candidateArticle = null;
+let literatureTotal = 0;
+let literatureLoadingMore = false;
+const LITERATURE_PAGE_SIZE = 30;
 
 function articleLink(url, label) {
   if (typeof url !== "string" || !url.startsWith("https://")) return null;
@@ -145,12 +148,70 @@ async function selectArticle(id) {
   }
 }
 
+function literatureRow(article) {
+  const row = button("literature-row", null, () => selectArticle(article.id));
+  row.dataset.id = article.id;
+  row.setAttribute("aria-pressed", "false");
+  row.append(element("strong", "", article.title),
+    element("small", "file-meta", [
+      article.year, article.provider,
+      article.citation_count ? "引用 " + article.citation_count : "",
+      article.open_access ? "开放获取" : "",
+      article.has_fulltext ? "已有全文" : "",
+    ].filter(Boolean).join(" · ")));
+  return row;
+}
+
+function appendLiteratureRows(articles) {
+  for (const article of articles) literatureList.append(literatureRow(article));
+}
+
+function appendLiteratureMore(data) {
+  literatureList.querySelector(".literature-more-button")?.remove();
+  if (!data.has_more) return;
+  const loaded = literatureList.querySelectorAll("button[data-id]").length;
+  const more = button("secondary-button literature-more-button",
+    `加载更多（已显示 ${loaded} / ${data.total}）`, loadMoreLiterature);
+  more.type = "button";
+  literatureList.append(more);
+}
+
+async function loadMoreLiterature() {
+  if (literatureLoadingMore) return;
+  const revision = literatureRevision;
+  const code = literatureCase.value;
+  const kind = literatureKinds.querySelector(":checked").value;
+  const loaded = literatureList.querySelectorAll("button[data-id]").length;
+  literatureLoadingMore = true;
+  literatureList.querySelector(".literature-more-button")?.setAttribute("disabled", "true");
+  try {
+    const query = "?case=" + encodeURIComponent(code)
+      + "&kind=" + kind + "&limit=" + LITERATURE_PAGE_SIZE + "&offset=" + loaded;
+    const data = await request("/api/literature" + query);
+    if (revision !== literatureRevision) return;
+    literatureTotal = data.total;
+    appendLiteratureRows(data.articles);
+    appendLiteratureMore(data);
+    literatureMessage.textContent = [
+      "来源 " + data.provider,
+      `已加载 ${literatureList.querySelectorAll("button[data-id]").length} / ${data.total}`,
+    ].join(" · ");
+  } catch (error) {
+    if (revision === literatureRevision) literatureMessage.textContent = error.message;
+  } finally {
+    literatureLoadingMore = false;
+    literatureList.querySelector(".literature-more-button")?.removeAttribute("disabled");
+  }
+}
+
 async function refreshLiterature({ message = "", selection = "" } = {}) {
   const revision = ++literatureRevision;
   const code = literatureCase.value;
   const kind = literatureKinds.querySelector(":checked").value;
   const dataset = kind === "dataset";
   literatureSelection = "";
+  literatureTotal = 0;
+  literatureLoadingMore = false;
   literatureCollect.disabled = true;
   literatureExport.hidden = true;
   literatureList.replaceChildren();
@@ -158,31 +219,23 @@ async function refreshLiterature({ message = "", selection = "" } = {}) {
   literatureMessage.textContent = "正在读取本地记录…";
   try {
     const query = "?case=" + encodeURIComponent(code) + "&kind=" + kind;
-    const data = await request("/api/literature" + query);
+    const pageQuery = query + "&limit=" + LITERATURE_PAGE_SIZE + "&offset=0";
+    const data = await request("/api/literature" + pageQuery);
     if (revision !== literatureRevision) return;
+    literatureTotal = data.total;
     literatureQuery.placeholder = data.default_query.replaceAll('"', "");
-    literatureMessage.textContent = [message, "来源 " + data.provider, "已入库 " + data.articles.length + (dataset ? " 个数据集" : " 篇")].filter(Boolean).join(" · ");
-    literatureExport.hidden = !data.articles.length;
+    literatureMessage.textContent = [message, "来源 " + data.provider,
+      "已入库 " + data.total + (dataset ? " 个数据集" : " 篇")].filter(Boolean).join(" · ");
+    literatureExport.hidden = !data.total;
     literatureExport.href = "/api/literature/export" + query;
     literatureCollect.disabled = collectingLiterature;
     literatureExpand.disabled = collectingLiterature || dataset;
-    literatureGenerate.disabled = collectingLiterature || dataset;
+    literatureGenerate.disabled = collectingLiterature || dataset || !data.total;
     if (!data.articles.length) {
       literatureList.append(element("p", "file-empty", "暂无记录，可直接用默认检索词开始采集"));
     }
-    for (const article of data.articles) {
-      const row = button("literature-row", null, () => selectArticle(article.id));
-      row.dataset.id = article.id;
-      row.setAttribute("aria-pressed", "false");
-      row.append(element("strong", "", article.title),
-        element("small", "file-meta", [
-          article.year, article.provider,
-          article.citation_count ? "引用 " + article.citation_count : "",
-          article.open_access ? "开放获取" : "",
-          article.has_fulltext ? "已有全文" : "",
-        ].filter(Boolean).join(" · ")));
-      literatureList.append(row);
-    }
+    appendLiteratureRows(data.articles);
+    appendLiteratureMore(data);
     if (selection && data.articles.some((article) => article.id === selection)) await selectArticle(selection);
   } catch (error) {
     if (revision === literatureRevision) literatureMessage.textContent = error.message;

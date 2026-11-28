@@ -31,6 +31,7 @@ Fieldweave 是一个可以在本机运行的跨学科科研协作 Web 原型，�
 - **AI 与人工结果分离**：保存模型原始结果和人工修订结果，发生修改后可查看差异
 - **知识库覆盖图**：按案例统计研究任务覆盖数、目标数和缺口
 - **文献采集**：支持 Europe PMC、Crossref、OpenAlex、arXiv 和 Zenodo
+- **历史归档导入**：可合并组员整理的 DOI 证据和 OpenAlex 原始论文
 - **方法文档采集**：从 10 个白名单技术文档站点抓取公开文档，遵守 robots.txt、同域限制和访问间隔
 - **候选条目生成**：可用模型从论文、方法文档的标题、摘要和全文分节生成待核对条目，审核后合并进工作台覆盖层
 - **批量入库**：选择原始文献或方法文档，批量生成候选，再进入人工审核和知识库合并
@@ -167,7 +168,8 @@ Windows 下把 `./Start.command` 换成 `.\Start.cmd`
 | `assets/branding/` | Logo、图标和品牌资源 |
 | `Start.cmd` / `Test.cmd` | Windows 启动与测试入口 |
 | `Start.command` / `Test.command` | macOS 启动与测试入口 |
-| `data/knowledge-base.sqlite3` | 只读示例知识库，包含 30 条证据条目 |
+| `data/knowledge-base.sqlite3` | 只读示例知识库，包含 50 条证据条目 |
+| `tools/import_archive_data.py` | 合并历史文献归档、证据链接和 OpenAlex 原始论文 |
 | `data/workspace.sqlite3` | 本机工作台数据库，首次运行自动创建，已被 Git 忽略 |
 | `docs/` | 架构、接口和项目文档 |
 | `.github/workflows/tests.yml` | Windows 和 macOS 的 GitHub Actions 测试 |
@@ -326,6 +328,37 @@ py -3 -B src/app.py --open --docs-interval-hours 24
 
 站点正文版权归原站点和作者所有，采集内容仅用于本地研究和原型演示
 
+## 历史数据合并
+
+项目已加入历史归档合并脚本：
+
+```text
+tools/import_archive_data.py
+```
+
+已完成的合并内容：
+
+- 原 30 条知识条目的证据链接已扩充
+- 新增约 20 条经过筛选的知识条目
+- 当前知识库共 50 条条目
+- 新增条目保留论文 DOI、作者、年份和期刊信息
+- 缺少字段时不补造页码、卷期或作者
+- 4 条重复方法条目没有重复导入
+- 5 条“依据待补”条目暂未导入
+- 导入 725 篇 OpenAlex 原始论文
+- 与已有文献重复的 9 篇没有重复插入
+- 文献列表按每页 30 条加载
+
+当前知识库分布：
+
+- MED：16 条
+- EPI：18 条
+- FIN：16 条
+
+OpenAlex 原始论文保存在本地 `data/workspace.sqlite3`，不会进入 Git 仓库
+
+组员提交的压缩包同样不会进入 Git 仓库
+
 ## 知识库配置
 
 案例、概念映射、覆盖任务和论文链接都保存在 `src/knowledge_config.json`
@@ -359,7 +392,7 @@ python3 -B -m unittest discover -s tests -v
 
 也可以双击 `Test.cmd` 或 `Test.command`
 
-当前测试数量为 106，全部测试不访问网络
+当前测试数量为 107，全部测试不访问网络
 
 测试覆盖检索排序、同义词、方法去重、覆盖任务、引用核对、工作台增删改查、聊天重命名、附件词表、会话搜索、候选审核、跨学科对齐、证据过滤、人工修订、知识版本、方法文档解析与白名单抓取、新增/更新去重统计、回收站、项目报告、自动备份、PDF 文本提取、图片原文、侧栏排序、文献解析和数据库迁移
 

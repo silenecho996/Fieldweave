@@ -72,7 +72,7 @@ class SearchRankingTests(unittest.TestCase):
 class RealKnowledgeBaseTests(unittest.TestCase):
     def test_database_contains_three_cases(self):
         entries = load_entries(KNOWLEDGE_DB)
-        self.assertEqual(len(entries), 30)
+        self.assertEqual(len(entries), 50)
         self.assertEqual({item["case_code"] for item in entries}, {"MED", "EPI", "FIN"})
 
 

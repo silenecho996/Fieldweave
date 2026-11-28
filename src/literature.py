@@ -438,18 +438,30 @@ class LiteratureStore:
                    SELECT article_id FROM literature_records WHERE provider='Zenodo')"""
         )
 
-    def list(self, case_code, kind="article"):
+    def list(self, case_code, kind="article", offset=0, limit=None):
         provider, query = case_settings(case_code, kind)
+        if type(offset) is not int or offset < 0:
+            raise WorkspaceError(400, "分页起点不正确")
+        if limit is not None and (type(limit) is not int or not 1 <= limit <= 200):
+            raise WorkspaceError(400, "每页数量需要为 1 至 200")
+        base_sql = (
+            """FROM literature_cases c JOIN literature_articles a ON a.id=c.article_id
+               WHERE c.case_code=? AND c.kind=?"""
+        )
         with self.workspace.connect() as conn:
-            rows = conn.execute(
-                """SELECT a.data, a.collected_at, a.fulltext IS NOT NULL AS has_fulltext
-                   FROM literature_cases c JOIN literature_articles a ON a.id=c.article_id
-                   WHERE c.case_code=? AND c.kind=?
-                   ORDER BY a.collected_at DESC, a.rowid DESC""",
-                (case_code, kind),
-            )
-            articles = [unpack(row) for row in rows]
-        return {"articles": articles, "provider": provider, "default_query": query}
+            total = conn.execute("SELECT count(*) " + base_sql, (case_code, kind)).fetchone()[0]
+            sql = ("SELECT a.data, a.collected_at, a.fulltext IS NOT NULL AS has_fulltext "
+                   + base_sql + " ORDER BY a.collected_at DESC, a.rowid DESC")
+            params = [case_code, kind]
+            if limit is not None:
+                sql += " LIMIT ? OFFSET ?"
+                params.extend((limit, offset))
+            articles = [unpack(row) for row in conn.execute(sql, params)]
+        return {
+            "articles": articles, "provider": provider, "default_query": query,
+            "total": total, "offset": offset, "limit": limit,
+            "has_more": offset + len(articles) < total,
+        }
 
     def collect(self, payload):
         payload = ensure_object(payload)

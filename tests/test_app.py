@@ -132,17 +132,17 @@ class KnowledgeOverlayTests(unittest.TestCase):
             result = app.merge_approved_candidates(load_entries(KNOWLEDGE_DB), store)
             self.assertEqual(result["merged"], 1)
             overlay = store.knowledge_entries()
-            self.assertEqual([entry["entry_id"] for entry in overlay], ["MED-11"])
+            self.assertEqual([entry["entry_id"] for entry in overlay], ["MED-20"])
             entries = app.cached_entries(KNOWLEDGE_DB, store)
-            self.assertEqual(len(entries), 31)
-            added = next(entry for entry in entries if entry["entry_id"] == "MED-11")
+            self.assertEqual(len(entries), 51)
+            added = next(entry for entry in entries if entry["entry_id"] == "MED-20")
             self.assertTrue(added["case_name"])
             self.assertEqual(added["method"], "OverlayNet")
             catalog = app.case_catalog(entries)
-            self.assertEqual(next(item for item in catalog if item["code"] == "MED")["count"], 11)
+            self.assertEqual(next(item for item in catalog if item["code"] == "MED")["count"], 17)
             response = app.answer_question(
                 {"case": "MED", "mode": "method", "question": "OverlayNet 分割方法"}, entries)
-            self.assertIn("MED-11", [item["entry_id"] for item in response["results"]])
+            self.assertIn("MED-20", [item["entry_id"] for item in response["results"]])
 
     def test_merge_without_approved_entries_is_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
