@@ -19,6 +19,28 @@ class ExternalQueryTests(unittest.TestCase):
             ["breadth first search"],
         )
 
+    def test_parser_respects_non_research_intent(self):
+        self.assertEqual(
+            parse_queries('{"research":false,"queries":[]}', "BFS"), [])
+
+    def test_numeric_input_does_not_trigger_literature_search(self):
+        with patch("external_search.generate") as generate, \
+                patch("external_search.fetch_records") as fetch:
+            result = search_external_literature("12346", SimpleNamespace(provider="deepseek"))
+        self.assertFalse(result["research"])
+        self.assertEqual(result["sources"], [])
+        generate.assert_not_called()
+        fetch.assert_not_called()
+
+    def test_model_can_reject_non_research_input(self):
+        with patch("external_search.generate",
+                   return_value=('{"research":false,"queries":[]}', "")), \
+                patch("external_search.fetch_records") as fetch:
+            result = search_external_literature(
+                "今天过得怎么样", SimpleNamespace(provider="deepseek"))
+        self.assertEqual(result["sources"], [])
+        fetch.assert_not_called()
+
 
 class ExternalSearchTests(unittest.TestCase):
     def test_search_returns_deduplicated_public_sources(self):

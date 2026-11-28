@@ -11,16 +11,19 @@ from search import search_terms
 
 
 QUERY_PROMPT = (
-    "你是科研文献检索助手。把用户问题转换成 1 至 3 个简洁的英文文献检索查询，"
+    "你是科研文献检索助手。先判断用户输入是不是值得检索公开文献的科研、学术或技术问题。"
+    "闲聊、问候、感谢、纯数字、乱码、简单事实或没有明确研究意图的内容不要检索。"
+    "只有当 research 为 true 时，才把问题转换成 1 至 3 个简洁的英文文献检索查询，"
     "保留研究对象、任务、方法和领域关键词。只输出 JSON："
-    '{"queries":["query one","query two"]}。不要解释，不要输出代码块。'
+    '{"research":true,"queries":["query one","query two"]}。'
+    "如果不需要检索，输出 {\"research\":false,\"queries\":[]}。不要解释，不要输出代码块。"
 )
 PROVIDERS = ("OpenAlex", "Crossref", "arXiv")
 PER_PROVIDER = 4
 MAX_RESULTS = 6
 
 
-def parse_queries(text, fallback):
+def parse_plan(text, fallback):
     text = text.strip()
     if text.startswith("```"):
         text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.S)
@@ -29,12 +32,28 @@ def parse_queries(text, fallback):
         data = json.loads(text[start:end + 1]) if 0 <= start < end else {}
     except (ValueError, RecursionError):
         data = {}
+    if isinstance(data, dict) and data.get("research") is False:
+        return {"research": False, "queries": []}
     queries = []
     if isinstance(data, dict) and isinstance(data.get("queries"), list):
         for item in data["queries"]:
             if isinstance(item, str) and item.strip():
                 queries.append(item.strip()[:180])
-    return queries[:3] or [fallback[:180]]
+    return {
+        "research": True,
+        "queries": queries[:3] or [fallback[:180]],
+    }
+
+
+def parse_queries(text, fallback):
+    return parse_plan(text, fallback)["queries"]
+
+
+def looks_like_research(question):
+    text = question.strip()
+    if len(text) < 2:
+        return False
+    return bool(re.search(r"[a-z㐀-鿿]", text, re.I))
 
 
 def query_terms(question, queries):
@@ -57,14 +76,17 @@ def score_article(article, terms):
 
 def search_external_literature(question, profile):
     """Return unverified public literature metadata, never local evidence."""
-    if not profile:
-        return {"queries": [], "sources": [], "errors": []}
+    if not profile or not looks_like_research(question):
+        return {"research": False, "queries": [], "sources": [], "errors": []}
     fallback = question.strip()[:180]
     try:
         raw_queries, _ = generate(profile, QUERY_PROMPT, question)
-        queries = parse_queries(raw_queries, fallback)
+        plan = parse_plan(raw_queries, fallback)
     except ModelError:
-        queries = [fallback]
+        plan = {"research": True, "queries": [fallback]}
+    if not plan["research"]:
+        return {"research": False, "queries": [], "sources": [], "errors": []}
+    queries = plan["queries"]
     terms = query_terms(question, queries)
     jobs = [(provider, query) for query in queries[:2] for provider in PROVIDERS]
     collected = []
@@ -113,4 +135,4 @@ def search_external_literature(question, profile):
         }
         if source["title"] and source["url"]:
             sources.append(source)
-    return {"queries": queries, "sources": sources, "errors": errors[:5]}
+    return {"research": True, "queries": queries, "sources": sources, "errors": errors[:5]}
