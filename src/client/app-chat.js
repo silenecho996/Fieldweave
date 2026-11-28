@@ -380,16 +380,31 @@ function renderReply(turn, index, view) {
     ));
     return;
   }
-  heading.textContent = payload.kind !== "general" && payload.source === "local" ? "知识库回答" : "科研助手";
+  heading.textContent = payload.kind === "external"
+    ? "外部文献回答"
+    : (payload.kind !== "general" && payload.source === "local" ? "知识库回答" : "科研助手");
   const modeLabel = (MODES[payload.mode] || MODES[turn.mode] || {}).label || "问答";
-  const scopeText = payload.kind === "general" || payload.source === "conversation"
-    ? "对话"
-    : (cases.find((item) => item.code === payload.retrieval_case)?.label || turn.caseLabel) + " · " + modeLabel;
+  const scopeText = payload.kind === "external"
+    ? "公开文献 · 外部检索"
+    : (payload.kind === "general" || payload.source === "conversation"
+      ? "对话"
+      : (cases.find((item) => item.code === payload.retrieval_case)?.label || turn.caseLabel) + " · " + modeLabel);
   view.user.title = scopeText;
   view.label.title = scopeText;
   const refs = new Map(payload.references.map((item) => [item.entry_id, {
     urls: referenceUrls(item), text: item.text,
   }]));
+  for (const source of payload.external_sources || []) {
+    let sourceUrl = null;
+    try {
+      if (source.url) sourceUrl = new URL(source.url);
+    } catch { /* Ignore malformed external URLs. */ }
+    refs.set(source.id, {
+      urls: sourceUrl ? [sourceUrl] : [],
+      text: [source.title, source.authors, source.year, source.venue, source.doi]
+        .filter(Boolean).join(" · "),
+    });
+  }
   if (payload.thinking?.trim()) body.append(thinkingBlock(payload.thinking.trim()));
   if (payload.answer) {
     body.append(modelBlock(payload.answer, refs, index));
@@ -401,13 +416,15 @@ function renderReply(turn, index, view) {
   const coverage = coverageNote(payload, turn);
   if (coverage) body.append(coverage);
   if (payload.references.length) body.append(evidenceDrawer(payload.references, index, refs));
+  if (payload.external_sources?.length) body.append(externalSources(payload.external_sources));
   if (payload.local_sources?.length) body.append(localSources(payload.local_sources));
   if (payload.published_sources?.length) body.append(publishedSources(payload.published_sources, payload.retrieval_case || turn.caseCode));
   if (payload.source !== "conversation") body.append(replyActions(turn, payload, index));
 }
 
 function coverageNote(payload, turn) {
-  if (payload.kind === "general" || payload.source === "conversation") return null;
+  if (payload.kind === "general" || payload.kind === "external"
+      || payload.source === "conversation") return null;
   const evidence = payload.references?.length || 0;
   const published = payload.published_sources?.length || 0;
   if (evidence >= 3 || evidence + published >= 3) return null;
@@ -678,6 +695,28 @@ function publishedSources(sources, caseCode) {
   return drawer;
 }
 
+function externalSources(sources) {
+  const drawer = element("details", "local-sources external-sources");
+  drawer.append(element("summary",
+    "", "外部文献检索 · " + sources.length + " 篇（未进入本地知识库）"));
+  for (const source of sources) {
+    const entry = element("article", "local-source");
+    const link = element("a", "literature-link", source.title);
+    link.href = source.url;
+    link.target = "_blank";
+    link.rel = "noreferrer noopener";
+    entry.append(link,
+      element("p", "",
+        [source.provider, source.year, source.venue, source.doi]
+          .filter(Boolean).join(" · ")));
+    if (source.abstract) {
+      entry.append(element("p", "external-abstract", source.abstract));
+    }
+    drawer.append(entry);
+  }
+  return drawer;
+}
+
 function turnView(turn, index) {
   const node = element("article", "turn");
   const user = element("div", "user-message");
@@ -708,11 +747,11 @@ function turnView(turn, index) {
 async function askQuestion(text, caseCode = active.case_code, { clearInput = true } = {}) {
   const item = cases.find((entry) => entry.code === caseCode) || currentCase();
   const value = (text || "").trim();
-  if (!ready || busy || modelPending || !item || !value) return;
+  if (!ready || busy || loading || modelPending || !item || !value) return;
   const turn = { question: value, caseCode: item.code, caseLabel: item.label, mode: "auto" };
   note();
   loading = true;
-  setBusy(true);
+  updateControls();
   try {
     const id = await ensureActiveChat();
     const index = active.turns.length;
@@ -752,7 +791,7 @@ async function askQuestion(text, caseCode = active.case_code, { clearInput = tru
     note(error.message);
   } finally {
     loading = false;
-    setBusy(false);
+    updateControls();
   }
 }
 

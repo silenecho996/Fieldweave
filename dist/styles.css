@@ -2578,6 +2578,10 @@ textarea:focus {
   color: var(--muted);
   font-size: .875rem;
 }
+.local-source p.external-abstract {
+  font-size: .8rem;
+  line-height: 1.5;
+}
 .workbench-dialog {
   color: var(--ink);
   background: var(--surface);

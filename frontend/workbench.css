@@ -383,6 +383,7 @@ textarea:focus { outline: none; }
 .local-source { padding: .6rem .73rem; overflow-wrap: anywhere; }
 .local-source + .local-source { border-top: 1px solid var(--line-subtle); }
 .local-source :is(p, blockquote) { margin: .18rem 0 0; color: var(--muted); font-size: .875rem; }
+.local-source p.external-abstract { font-size: .8rem; line-height: 1.5; }
 
 .workbench-dialog { color: var(--ink); background: var(--surface); border: 1px solid var(--control-line); border-radius: .85rem; padding: 0; max-width: calc(100% - 1.4rem); max-height: calc(100% - 2rem); overflow: auto; }
 .workbench-dialog::backdrop { background: var(--overlay); }

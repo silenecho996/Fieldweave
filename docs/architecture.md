@@ -31,6 +31,7 @@ src/app.py
 | `src/knowledge.py` | 案例预设、概念映射、覆盖任务和证据结构 |
 | `src/knowledge_config.json` | 案例、映射、覆盖任务和论文链接配置 |
 | `src/model_providers.py` | DeepSeek、OpenAI、Claude、Gemini 和兼容接口 |
+| `src/external_search.py` | 本地无命中时查询 OpenAlex、Crossref 和 arXiv 的外部文献 |
 | `src/literature.py` | Europe PMC、Crossref、OpenAlex、arXiv 和 Zenodo 采集 |
 | `src/method_docs.py` | 白名单方法文档采集、正文提取和 robots.txt 检查 |
 | `src/method_docs_config.json` | 方法文档白名单、种子页面和抓取限制 |
@@ -69,6 +70,15 @@ src/app.py
 4. 去重后写入 `data/workspace.sqlite3`
 5. 可从论文生成候选条目，审核后合并进知识库覆盖层
 6. 文献列表通过 `limit` 和 `offset` 分页加载
+
+### 外部文献 fallback
+
+1. 本地知识库没有命中时，`external_search.py` 让模型生成英文检索查询
+2. 并发查询 OpenAlex、Crossref 和 arXiv
+3. 按 DOI 和标题去重，按关键词和引用数排序
+4. 把最多 6 篇外部文献交给模型组织回答
+5. 外部文献使用 `EXT-n` 引用并显示来源链接
+6. 外部结果不会自动进入本地知识库
 
 ### 历史归档导入
 

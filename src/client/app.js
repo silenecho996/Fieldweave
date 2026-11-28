@@ -163,7 +163,7 @@ function showConnectionError(message = "") {
 }
 
 function updateInput() {
-  submit.disabled = !ready || busy || modelPending || !question.value.trim();
+  submit.disabled = !ready || busy || loading || modelPending || !question.value.trim();
   for (const choice of exampleList.querySelectorAll("input")) {
     choice.checked = question.value === exampleCase?.examples[choice.value];
   }
